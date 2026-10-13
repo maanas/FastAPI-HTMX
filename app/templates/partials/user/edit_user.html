@@ -13,7 +13,8 @@
     {% else %}
     <form
       id="edit-user-form"
-      x-data
+      x-data="cancelEdit"
+      data-list-url="{{ url_for('get_users') }}"
       hx-target="#dashboard-body"
       hx-put="{{ url_for('post_update_user', user_id=user.id) }}"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
@@ -84,7 +85,7 @@
       <button
         type="button"
         hx-confirm="Are you sure you want cancel the profile update?"
-        @click.prevent="window.location.href = '{{ url_for('get_users') }}'"
+        @click.prevent="cancel"
         hx-boost="true"
         class="text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
       >Cancel</button>

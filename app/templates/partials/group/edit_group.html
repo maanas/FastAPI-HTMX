@@ -14,7 +14,7 @@
     <h1 class="mb-4 text-xl font-semibold text-heading">Edit Group</h1>
     <form
       id="edit-group-form"
-      x-data
+      x-data="resetForm"
       hx-target="#dashboard-body"
       hx-put="{{ url_for('post_update_group', group_id=group.id) }}"
       hx-swap="outerHTML"
@@ -61,7 +61,7 @@
         hx-target="#dashboard-body"
         hx-swap="outerHTML"
         hx-push-url="true"
-        @click="$el.closest('form').reset();"
+        @click="reset"
         class="text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
       >Cancel</button>
     </form>

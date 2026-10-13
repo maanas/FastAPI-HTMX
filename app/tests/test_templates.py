@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from app.tests.template_rules import template_rule_violations
+from app.tests.template_rules import alpine_csp_problems, template_rule_violations
 
 APP = Path(__file__).resolve().parents[1]
 TEMPLATES = APP / "templates"
@@ -216,3 +216,59 @@ def test_hyperscript_check_finds_its_attributes():
 def test_required_message_check_needs_the_validate_handler():
     html = '<input x-data="requiredMessage" data-required-message="m">'
     assert scan(html).required_inputs == [("m", "")]
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        "<div x-data></div>",
+        '<div x-data=""></div>',
+        '<div x-data="{ open: false }"></div>',
+        '<div x-data="a.b"></div>',
+    ],
+)
+def test_csp_check_needs_a_component_name_in_x_data(html):
+    assert any("x-data" in p for p in template_rule_violations(html))
+    assert not template_rule_violations('<div x-data="login"></div>')
+
+
+@pytest.mark.parametrize(
+    "attr",
+    [
+        "x-init=\"$watch('a', v => b())\"",
+        'x-text="`hi ${name}`"',
+        '@click="window.location.href = u"',
+        ':class="document.title"',
+        'x-on:change="a = 1; b = 2"',
+        '@input="a(), b()"',
+        '@input="a({{ token }})"',
+        'x-show="a, b"',
+        'x-html="content"',
+    ],
+)
+def test_csp_check_flags_expressions_the_parser_rejects(attr):
+    assert template_rule_violations(f'<div x-data="c" {attr}></div>')
+
+
+@pytest.mark.parametrize(
+    "attr",
+    [
+        'x-show="open"',
+        '@click="f(a, b)"',
+        '@click="go;"',
+        ":class=\"{ 'hidden': !a, 'block b': c }\"",
+        ":class=\"a ? 'x, y' : 'z'\"",
+        'x-bind:disabled="!a || b"',
+        'x-transition:leave="transition ease-in duration-1000"',
+        'x-on:htmx:validation:validate="validate"',
+        'x-model="name"',
+        ":class=\"a ? 'document; x' : 'window'\"",
+        "x-cloak",
+    ],
+)
+def test_csp_check_accepts_single_expressions(attr):
+    assert not template_rule_violations(f'<div x-data="c" {attr}></div>')
+
+
+def test_csp_check_ignores_non_alpine_attributes():
+    assert alpine_csp_problems("data-x", "a => b") == []

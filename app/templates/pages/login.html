@@ -5,7 +5,7 @@
 <div
   id="login-page"
   x-data="login"
-  x-init="$watch('showError', (value) => { if (value) { setTimeout(() => { showError = false; }, 3000); } });"
+  data-csrf-token="{{ csrf_token or '' }}"
   class="flex justify-center p-6"
 >
   <div class="w-full max-w-sm bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs">
@@ -26,7 +26,7 @@
         placeholder="john.doe@company.com"
         autocomplete="off"
         x-model="username"
-        @input="checkLoginUsername(), allocateCSRFToken({{ csrf_token | tojson | forceescape }})"
+        @input="checkLoginUsername()"
         required
       />
       <p

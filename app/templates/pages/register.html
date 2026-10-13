@@ -5,10 +5,6 @@
 <div
   id="register-page"
   x-data="register"
-  x-init="$watch('username', () => checkUsername());
-          $watch('password', () => validatePassword());
-          $watch('message', () => checkServerError());
-          $watch('repeatPassword', () => passwordsMatch())"
   class="flex justify-center p-6"
 >
   <div class="w-full max-w-sm bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs">
@@ -118,10 +114,8 @@
     <button
       type="button"
       id="register-button"
-      :class="(!username || !password || !repeatPassword || showUsernameError || showPasswordError || showRepeatPasswordError)
-        ? 'text-fg-disabled bg-disabled border-default-medium cursor-not-allowed'
-        : 'text-white bg-brand border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium'"
-      x-bind:disabled="!username || !password || !repeatPassword || showUsernameError || showPasswordError || showRepeatPasswordError"
+      :class="submitClass"
+      x-bind:disabled="submitDisabled"
       @click="registerUser()"
       class="box-border border shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none w-full mb-3"
     >
