@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-checker-env-vars-ok
-status: proposed
+status: applied
+applied: 2026-10-13
 target: .claude/agents/checker.md
 metric: env
 revises: 2026-10-13-checker-env-probes

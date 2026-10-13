@@ -44,9 +44,9 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   markup on a Tailwind v4 stylesheet will look different in places until the templates are redone.
 - This Mac has no `.env` for the repo: workers run the tests with the ten settings exported and a
   throwaway SQLite file, so tell the checker not to report the missing `.env`.
-  One retro proposal waits for the owner in `.claude/learning/proposals/`
+  A third retro proposal was approved and applied on 2026-10-13
   (`2026-10-13-checker-env-vars-ok`: the checker uses exported settings instead of stopping on a
-  missing `.env`).
+  missing `.env`). No proposal is waiting.
 - Next: "Templates to Flowbite v4 markup".
 
 ## Change list
@@ -97,8 +97,10 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   Flowbite's Tailwind plugin loads from the submodule without Node: its only outside dependency,
   `mini-svg-data-uri` 1.4.4, is vendored at `theme/node_modules/`. The Flowbite 1.8.1 stylesheet
   is gone. Rebuild after any template or script change that adds a class.
-  Open: the default theme names the Inter font, which Flowbite loads from Google Fonts. It is not
-  loaded here (no CDN), so pages use the system font: vendor Inter or choose another font.
+  The Inter font the default theme names is vendored too (`@fontsource-variable/inter` 5.3.0,
+  OFL-1.1, latin and latin-ext, in `app/static/vendor/inter/`, declared in
+  `app/static/css/src/fonts.css`). When the content security policy comes, `font-src` needs
+  `'self'`.
 - [ ] **Templates to Flowbite v4 markup** (about 3,600 lines in `app/templates/`), `base.html` is an
   empty file: make it the generic shell (Flowbite navbar + sidebar). Found in the CSS build:
   17 class names in the templates produce no CSS (12 typos with a dash for the colon such as
