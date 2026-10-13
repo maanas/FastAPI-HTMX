@@ -184,18 +184,6 @@ document.addEventListener("alpine:init", () => {
 });
 
 document.addEventListener("alpine:init", () => {
-  // A required input with its own message: the template sets x-data="requiredMessage",
-  // x-on:htmx:validation:validate="validate" and data-required-message="..."
-  Alpine.data("requiredMessage", () => ({
-    validate() {
-      this.$el.setCustomValidity(
-        this.$el.value === "" ? this.$el.dataset.requiredMessage : "",
-      );
-    },
-  }));
-});
-
-document.addEventListener("alpine:init", () => {
   // Alert state shared by the list pages and the upload page. showAlertMessage() below
   // sets isUpdated / isAdded / isDeleted and message; each flag resets after 3 seconds.
   const alertState = () => ({
@@ -252,34 +240,6 @@ document.addEventListener("alpine:init", () => {
     },
     startLoading() {
       this.isLoading = true;
-    },
-  }));
-});
-
-document.addEventListener("alpine:init", () => {
-  // Add role form: a message shows while a field is empty
-  Alpine.data("roleForm", () => ({
-    roleName: "",
-    roleDesc: "",
-    get roleTypeError() {
-      return this.roleName ? "" : "Please enter the Role Type";
-    },
-    get roleDescError() {
-      return this.roleDesc ? "" : "Please enter the Role Description";
-    },
-  }));
-
-  // Edit forms with a Cancel button that resets the form (root element is the form)
-  Alpine.data("resetForm", () => ({
-    reset() {
-      this.$root.reset();
-    },
-  }));
-
-  // Edit user form: Cancel leaves for the user list, its URL is in data-list-url on the form
-  Alpine.data("cancelEdit", () => ({
-    cancel() {
-      window.location.href = this.$root.dataset.listUrl;
     },
   }));
 });

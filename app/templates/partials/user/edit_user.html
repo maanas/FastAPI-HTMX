@@ -13,8 +13,6 @@
     {% else %}
     <form
       id="edit-user-form"
-      x-data="cancelEdit"
-      data-list-url="{{ url_for('get_users') }}"
       hx-target="#dashboard-body"
       hx-put="{{ url_for('post_update_user', user_id=user.id) }}"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
@@ -84,9 +82,11 @@
       <button type="submit" class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none">Update</button>
       <button
         type="button"
-        hx-confirm="Are you sure you want cancel the profile update?"
-        @click.prevent="cancel"
-        hx-boost="true"
+        hx-get="{{ url_for('get_users') }}"
+        hx-confirm="Are you sure you want to cancel the profile update?"
+        hx-target="#dashboard-body"
+        hx-swap="outerHTML"
+        hx-push-url="true"
         class="text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
       >Cancel</button>
     </form>
