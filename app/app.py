@@ -23,15 +23,23 @@ from app.schema.users import UserCreate, UserRead, UserUpdate
 
 from fastapi_csrf_protect import CsrfProtect
 
-from app.core.csrf_settings import CsrfSettings
+from app.core.csrf_settings import CsrfSettings, crsf_settings
+from app.core.security_headers import SecurityHeadersMiddleware
 
+# The API docs pages load Swagger UI from a CDN with an inline script: both are
+# refused by the content security policy and the no-CDN rule, so they are off
 app = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
     exception_handlers={
         HTTPException: http_exception_handler,
         CsrfProtectError: csrf_error_handler,
     }
 )
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# HSTS only when the site is served over HTTPS (COOKIE_SECURE)
+app.add_middleware(SecurityHeadersMiddleware, hsts=crsf_settings.cookie_secure)
 
 
 # Every POST of the fastapi-users routers needs the CSRF pair (login included,

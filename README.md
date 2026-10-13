@@ -142,7 +142,7 @@ You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
    .venv/bin/python main.py
    ```
 
-   It serves on `http://127.0.0.1:8080` (API docs at `/docs`).
+   It serves on `http://127.0.0.1:8080`.
 
 6. **Run the tests.** Run them after step 4: they use the database `DATABASE_URL` points to.
 
@@ -172,6 +172,17 @@ required.
 | `SUPERUSER_PASSWORD` | no | Read only by `app.commands.create_superuser`, at least 12 characters |
 
 **Note:** While using placeholder MinIO credentials will allow the database to record file uploads, the actual files won't be stored without valid MinIO server credentials. For full file storage functionality, set up a MinIO server or use valid MinIO service credentials.
+
+## Security headers
+
+Every response (pages, static files, redirects, errors) carries a content security policy that allows
+the own origin only (no inline script or style, no `eval`, no CDN), plus `X-Content-Type-Options`,
+`Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` and `Cross-Origin-Opener-Policy`. The policy
+and the headers are listed in `app/core/security_headers.py`. `Strict-Transport-Security` is sent only
+when `COOKIE_SECURE=true`, never over plain http. htmx runs with `allowEval`, `allowScriptTags`, `includeIndicatorStyles`
+off and `selfRequestsOnly` on (the `htmx-config` meta tag in `base/base.html`). The API docs pages
+(`/docs`, `/redoc`, `/openapi.json`) are off: Swagger UI needs a CDN and an inline script, which the
+policy forbids.
 
 ## CSS
 
