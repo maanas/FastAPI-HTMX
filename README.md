@@ -19,8 +19,8 @@ This project leverages several external libraries to provide a robust and effici
 - [Jinja2](https://palletsprojects.com/p/jinja/) (3.1.6): A modern and designer-friendly templating language for Python.
 - [NH3](https://github.com/Th3Whit3Wolf/nh3) (0.3.7): A Python binding to the HTML sanitizer `h3`.
 - [Alembic](https://alembic.sqlalchemy.org/en/latest/) (1.20.0): A lightweight database migration tool for usage with the SQLAlchemy Database Toolkit.
-- [AlpineJS](https://alpinejs.dev/) (loaded from CDN): A rugged, minimal framework for composing JavaScript behavior in your HTML templates.
-- [Flowbite](https://flowbite.com/) (loaded from CDN): A component library built on top of Tailwind CSS for building modern web interfaces.
+- [AlpineJS](https://alpinejs.dev/) (3.17.4, vendored in `app/static/vendor/`, see `VENDORED.md`): A rugged, minimal framework for composing JavaScript behavior in your HTML templates.
+- [Flowbite](https://flowbite.com/) (JS 4.0.2, vendored in `app/static/vendor/`, see `VENDORED.md`): A component library built on top of Tailwind CSS for building modern web interfaces.
 - [Pydantic](https://docs.pydantic.dev/2.0/) (2.14.1): Data validation and settings management using Python type annotations.
 
 ## Features Implemented
