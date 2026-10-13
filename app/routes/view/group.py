@@ -492,6 +492,8 @@ async def post_group_user_link(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
+    # Read once: the rollback in the except path expires the user object
+    is_superuser = current_user.is_superuser
     checked = False
     try:
         await csrf_protect.validate_csrf(request)
@@ -599,7 +601,7 @@ async def post_group_user_link(
                 "users": users,
                 "group_user_ids": group_user_ids,
                 "csrf_token": csrf_token,
-                "user_type": current_user.is_superuser,
+                "user_type": is_superuser,
             },
             e,
             fragment=GROUP_USERS,

@@ -1,0 +1,9 @@
+{# Fragment, no layout: the error of an upload or a delete, swapped into #upload-result. #}
+{# alerts.md "Default alert" #}
+{% if error_messages %}
+<div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
+  {% for error_message in error_messages %}
+  <span class="font-medium">{{ error_message }}</span>
+  {% endfor %}
+</div>
+{% endif %}

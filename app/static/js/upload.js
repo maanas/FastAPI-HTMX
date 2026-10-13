@@ -1,47 +1,29 @@
-/**
- * Sets up an event listener for the "htmx:afterRequest" event on the upload-files-table element.
- * When triggered, it checks if the event target is a file download button and initiates a file download.
- * function
- * listens htmx:afterRequest
- * returns {void}
- */
-document.addEventListener("DOMContentLoaded", function () {
-  document
-    .getElementById("upload-files-table")
-    .addEventListener("htmx:afterRequest", function (evt) {
-      if (evt.target && evt.target.id === "file-download-button") {
-        const downloadUrl = evt.target.getAttribute("hx-get");
-        const a = document.createElement("a");
-        a.href = downloadUrl;
-        a.download = ""; // Optional: specify a filename if needed
-        document.body.appendChild(a);
-        document.body.removeChild(a);
-      }
-    });
+// Upload page behaviour. Loaded by the shell on every page, so the listener
+// sits on document.body (it survives swaps) and ignores anything that is not
+// the upload form.
+
+// After the upload request: reset the form and the Alpine state of #upload-page.
+document.body.addEventListener("htmx:afterRequest", function (evt) {
+  const form = evt.target.closest ? evt.target.closest("#upload-form") : null;
+  if (!form || evt.target !== form) {
+    return;
+  }
+  if (evt.detail.successful) {
+    form.reset();
+  }
+  resetUploadState(evt.detail.successful);
 });
 
-// Making a after request function to call and handle the loading state
-function handleUploadRequest() {
-  try {
-    const components = document.querySelectorAll("[x-data]");
-
-    const uploadPageIndex = Array.from(components).findIndex(
-      (component) => component.id === "upload-page"
-    );
-
-    if (uploadPageIndex === -1) {
-      throw new Error("No element with id 'upload-page' found");
-    }
-    const component = components[uploadPageIndex];
-    if (!component) {
-      throw new Error("No element with x-data found");
-    }
-    const data = Alpine.mergeProxies(component._x_dataStack);
-
-    data.isLoading = false;
+// Ends the loading state; after a successful upload the chosen file is cleared too.
+function resetUploadState(successful) {
+  const component = document.getElementById("upload-page");
+  if (!component) {
+    return;
+  }
+  const data = Alpine.$data(component);
+  data.isLoading = false;
+  if (successful) {
     data.fileLoaded = false;
     data.fileName = "";
-  } catch (error) {
-    console.error("Error in click event handler:", error);
   }
 }

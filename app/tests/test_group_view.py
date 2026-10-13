@@ -6,11 +6,14 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi import Depends
 from httpx import ASGITransport, AsyncClient
 from loguru import logger
 from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.app import app
+from app.database.db import get_async_session
 from app.database.security import current_active_user
 from app.models.groups import Group, UserGroupLink
 from app.models.users import User, UserProfile
@@ -595,3 +598,44 @@ async def test_an_error_response_logs_no_email_and_no_token(
     assert "context keys" in logged
     assert USER_EMAIL not in logged
     assert token not in logged
+
+
+@pytest.fixture
+async def real_admin_logged_in(db_session):
+    """The signed-in superuser as a real row loaded through the route's own session,
+    so a rollback in the route expires it (a plain fake object cannot be)."""
+    admin = User(
+        email="pytest-group-admin@example.com",
+        hashed_password="x",
+        is_active=True,
+        is_superuser=True,
+        is_verified=False,
+    )
+    db_session.add(admin)
+    await db_session.commit()
+    admin_id = admin.id
+
+    async def load_user(session: AsyncSession = Depends(get_async_session)):
+        return await session.get(User, admin_id)
+
+    app.dependency_overrides[current_active_user] = load_user
+    yield admin_id
+    app.dependency_overrides.pop(current_active_user, None)
+    await db_session.rollback()
+    await db_session.execute(delete(User).where(User.id == admin_id))
+    await db_session.commit()
+
+
+async def test_a_failed_allocation_with_a_real_user_row_is_not_a_500(
+    client, real_admin_logged_in, db_session, created_groups
+):
+    group = await make_group(db_session, created_groups)
+    token = await csrf_token_from(client)
+    response = await client.post(
+        f"/post_group_user_link/{group.id}",
+        data={"all_users": "not-a-uuid"},
+        headers={**HX, "X-CSRF-Token": token},
+    )
+    assert response.status_code == 200
+    assert "HX-Location" not in response.headers
+    assert 'id="create-group-form"' in response.text
