@@ -11,8 +11,19 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 sys.path.append(BASE_DIR)
 
 
+NAMING_CONVENTION = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
+
+
 class Base(DeclarativeBase):
-    metadata: sqlalchemy.MetaData = sqlalchemy.MetaData()  # type: ignore
+    metadata: sqlalchemy.MetaData = sqlalchemy.MetaData(  # type: ignore
+        naming_convention=NAMING_CONVENTION
+    )
 
 
 DATABASE_URL = os.environ["DATABASE_URL"]

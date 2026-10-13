@@ -1,1 +1,18 @@
-Generic single-database configuration with an async dbapi.
+Alembic migrations, async engine (works with sqlite+aiosqlite).
+
+Create the database on a fresh clone:
+
+    .venv/bin/alembic upgrade head
+
+Create the next migration after a model change (numbered, readable ids):
+
+    .venv/bin/alembic revision --autogenerate --rev-id 0002_<what> -m "<what>"
+
+Then read the generated file, fix it by hand where needed, and run
+`alembic upgrade head` and `alembic downgrade -1` once before committing.
+`alembic check` must then report no pending changes.
+
+Rules:
+- Seed data goes in its own migration, never in a schema migration.
+- A migration that has been applied (committed, shared or deployed) is never
+  edited. Fix it with a new migration.

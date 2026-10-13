@@ -5,45 +5,54 @@ from logging.config import fileConfig
 
 from alembic import context
 from dotenv import load_dotenv
+import sqlalchemy as sa
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.database.base import Base, init_models
 
-# ---------------- added code -------------------------#
-
-init_models()
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-print(BASE_DIR, "is the base directory")
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 sys.path.append(BASE_DIR)
+
+# Register every model on Base.metadata for autogenerate.
+init_models()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# ---------------- added code -------------------------#
-# this will overwrite the ini-file sqlalchemy.url path
-# with the path given in the config of the main code
+# The database URL comes from the environment, not from alembic.ini.
 config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
-print(os.environ["DATABASE_URL"], "is the database path")
+
 # Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+
+def render_item(type_, obj, autogen_context):
+    """Keep app code out of generated migrations.
+
+    A type defined in app.* would render as `app.models...()` and fail with a
+    NameError, and a migration must not import models that change later. Such a
+    type is a String subclass here, so it is written as a plain `sa.String()`.
+    A String subclass under app.* is rendered as a bare `sa.String()`, so check
+    the rendered type by hand if such a type ever has a length.
+    """
+    if (
+        type_ == "type"
+        and isinstance(obj, sa.String)
+        and type(obj).__module__.startswith("app.")
+    ):
+        return "sa.String()"
+    return False
+
+
+def is_sqlite(url: str) -> bool:
+    return url.startswith("sqlite")
 
 
 def run_migrations_offline() -> None:
@@ -64,6 +73,9 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        render_as_batch=is_sqlite(url),
+        render_item=render_item,
     )
 
     with context.begin_transaction():
@@ -71,7 +83,13 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        render_as_batch=is_sqlite(config.get_main_option("sqlalchemy.url")),
+        render_item=render_item,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
