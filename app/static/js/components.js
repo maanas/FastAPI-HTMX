@@ -11,6 +11,27 @@ document.addEventListener("alpine:init", () => {
     repeatPassword: "",
     emailPattern: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
     passwordPattern: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/,
+    init() {
+      this.$watch("username", () => this.checkUsername());
+      this.$watch("password", () => this.validatePassword());
+      this.$watch("message", () => this.checkServerError());
+      this.$watch("repeatPassword", () => this.passwordsMatch());
+    },
+    get submitDisabled() {
+      return (
+        !this.username ||
+        !this.password ||
+        !this.repeatPassword ||
+        this.showUsernameError ||
+        this.showPasswordError ||
+        this.showRepeatPasswordError
+      );
+    },
+    get submitClass() {
+      return this.submitDisabled
+        ? "text-fg-disabled bg-disabled border-default-medium cursor-not-allowed"
+        : "text-white bg-brand border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium";
+    },
     checkUsername() {
       if (!this.username) {
         this.showUsernameError = false;
@@ -97,6 +118,18 @@ document.addEventListener("alpine:init", () => {
     showInputButton: false,
     csrfToken: "",
 
+    init() {
+      // The token comes from the server in data-csrf-token on the component root
+      this.csrfToken = this.$el.dataset.csrfToken || "";
+      this.$watch("showError", (value) => {
+        if (value) {
+          setTimeout(() => {
+            this.showError = false;
+          }, 3000);
+        }
+      });
+    },
+
     checkLoginUsername() {
       const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
       if (this.username === "") {
@@ -109,9 +142,6 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    allocateCSRFToken(value) {
-      this.csrfToken = value;
-    },
     setCookie() {
       const formData = new URLSearchParams();
       formData.append("grant_type", "password");
@@ -161,6 +191,95 @@ document.addEventListener("alpine:init", () => {
   }));
 });
 
+document.addEventListener("alpine:init", () => {
+  // Alert state shared by the list pages and the upload page. showAlertMessage() below
+  // sets isUpdated / isAdded / isDeleted and message; each flag resets after 3 seconds.
+  const alertState = () => ({
+    isLoading: false,
+    isUpdated: false,
+    isAdded: false,
+    isDeleted: false,
+    message: "",
+    watchAlerts() {
+      for (const flag of ["isUpdated", "isAdded", "isDeleted"]) {
+        this.$watch(flag, (value) => {
+          if (value) {
+            setTimeout(() => {
+              this[flag] = false;
+            }, 3000);
+          }
+        });
+      }
+    },
+  });
+
+  // Roles, groups and users list pages
+  Alpine.data("listAlerts", () => ({
+    ...alertState(),
+    init() {
+      this.watchAlerts();
+    },
+  }));
+
+  // Upload page; upload.js also writes isLoading, fileLoaded and fileName
+  Alpine.data("uploadPage", () => ({
+    ...alertState(),
+    fileLoaded: false,
+    fileName: "",
+    init() {
+      this.watchAlerts();
+    },
+    selectFile(event) {
+      const file = event.target.files[0];
+      this.fileName = file ? file.name : "";
+      this.fileLoaded = Boolean(file);
+    },
+    get readyMessage() {
+      if (!this.fileName) {
+        return "";
+      }
+      const base = this.fileName.split(".").slice(0, -1).join(".");
+      return `'${base}' is ready for upload`;
+    },
+    get submitClass() {
+      return this.fileLoaded && !this.isLoading
+        ? "text-white bg-brand hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium"
+        : "text-fg-disabled bg-disabled cursor-not-allowed";
+    },
+    startLoading() {
+      this.isLoading = true;
+    },
+  }));
+});
+
+document.addEventListener("alpine:init", () => {
+  // Add role form: a message shows while a field is empty
+  Alpine.data("roleForm", () => ({
+    roleName: "",
+    roleDesc: "",
+    get roleTypeError() {
+      return this.roleName ? "" : "Please enter the Role Type";
+    },
+    get roleDescError() {
+      return this.roleDesc ? "" : "Please enter the Role Description";
+    },
+  }));
+
+  // Edit forms with a Cancel button that resets the form (root element is the form)
+  Alpine.data("resetForm", () => ({
+    reset() {
+      this.$root.reset();
+    },
+  }));
+
+  // Edit user form: Cancel leaves for the user list, its URL is in data-list-url on the form
+  Alpine.data("cancelEdit", () => ({
+    cancel() {
+      window.location.href = this.$root.dataset.listUrl;
+    },
+  }));
+});
+
 // Store pending alerts during page transitions
 window.pendingAlerts = [];
 
@@ -203,7 +322,7 @@ function showAlertMessage(alertData) {
     throw new Error(`No element with id '${alertData.source}' found`);
   }
 
-  const data = Alpine.mergeProxies(component._x_dataStack);
+  const data = Alpine.$data(component);
 
   setTimeout(function () {
     if (alertData.type === "updated") {

@@ -5,7 +5,7 @@
     <h1 class="mb-4 text-xl font-semibold text-heading">Add Role</h1>
     <form
       id="create-role-form"
-      x-data="{ roleName: '', roleDesc: '', roleTypeError: '', roleDescError: '' }"
+      x-data="roleForm"
       hx-target="#dashboard-body"
       hx-post="{{ url_for('post_create_roles') }}"
       hx-swap="outerHTML"
@@ -19,7 +19,6 @@
           id="role-type"
           name="role_name"
           x-model="roleName"
-          x-effect="roleTypeError = !roleName ? 'Please enter the Role Type' : ''"
           placeholder="Project Manager"
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
@@ -33,7 +32,6 @@
           id="role-desc"
           name="role_desc"
           x-model="roleDesc"
-          x-effect="roleDescError = !roleDesc ? 'Please enter the Role Description' : ''"
           placeholder="Project manager is responsible for the planning, execution and closing of any project."
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"

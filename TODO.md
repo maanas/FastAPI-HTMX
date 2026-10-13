@@ -22,8 +22,9 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Git identity for this repo is `Maanas Royy <m4manas@gmail.com>` (local config, there is no
   global email). The fork's commits were recreated with it on 2026-10-13, so `main` was force
   pushed once by maanas.
-- Branch `feat/hyperscript-out` removes hyperscript and is the next pull request to merge. With
-  it the suite has 296 tests.
+- Branch `feat/hyperscript-out` removes hyperscript (pull request #7, open). Branch
+  `feat/alpine-csp` is stacked on it and swaps Alpine for its CSP build: merge #7 first, then the
+  Alpine pull request shows only its own commits. With both the suite has 324 tests.
 - Versions checked on 2026-10-13: every pinned package and vendored file is at its latest release
   (Flowbite 4.0.2, Alpine 3.17.4, htmx 2.0.11, Tailwind CLI 4.3.3, Inter 5.3.0, all direct Python
   dependencies), except sqlalchemy (held at 2.0.54 by fastapi-users-db-sqlalchemy).
@@ -38,7 +39,8 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Three retro proposals were approved and applied on 2026-10-13 (checker: no `ls` of `.env`, no
   `timeout`; coder: stop a server by PID, never `pkill` by name; checker: exported settings
   instead of stopping on a missing `.env`).
-- Next: "Alpine CSP build", then "Security".
+- Next: "Security" (the content security policy can now leave out `unsafe-eval`), with a browser
+  pass before or with it.
 
 ## Change list
 
@@ -113,8 +115,6 @@ in variables in one place (colours are decided later, keep Flowbite's default th
     `template_rules.py`; classes in a JS template literal or an `x-transition` attribute are not
     checked; the stale-CSS test is skipped where the Tailwind binary is not downloaded (a fresh
     clone, CI) and its binary lookup matches any architecture.
-  - `edit_user.html:87` still puts a `url_for` value in a hand-quoted JS string; use
-    `tojson | forceescape` as `login.html` does.
   - Kept as found: register's "Return to login" button requests the dashboard route; "Forgot
     Username/Password" has no `href`; the register success message shows in the error box; the
     login and register cards are not vertically centred (no Flowbite example for it).
@@ -133,10 +133,24 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   empty field, before or after this change, because the browser's own `required` check stops the
   submit before htmx fires `htmx:validation:validate`. Either drop the four custom messages or
   make them work (decide in the browser pass).
-- [ ] **Alpine CSP build** (`@alpinejs/csp`) if the `x-data` uses can live in `Alpine.data()`
-  components, so the content security policy needs no `unsafe-eval`. Of the 14 uses, 6 already
-  name a component (`login`, `register`, four `requiredMessage`), 3 are a bare `x-data` and 5 are
-  inline objects (`role/add_role.html`, the three list fragments, `upload.html`). Not tried yet.
+- [x] **Alpine CSP build** (2026-10-13, branch `feat/alpine-csp`): the shell loads
+  `@alpinejs/csp` 3.17.4 (`app/static/vendor/alpinejs/alpine-csp.min.js`) and the standard build
+  is gone, so the content security policy needs no `unsafe-eval`. Every `x-data` names a component
+  in `app/static/js/components.js` (new: `listAlerts`, `uploadPage`, `roleForm`, `resetForm`,
+  `cancelEdit`); the `x-init` watchers moved into `init()`, the login CSRF token arrives through
+  `data-csrf-token` and the cancel URL in `edit_user.html` through `data-list-url`.
+  `alpine_csp_problems` in `app/tests/template_rules.py` fails a template whose Alpine attribute
+  the CSP parser would reject, and a test checks every vendored script's sha256 against
+  `VENDORED.md`. The parser in 3.17.4 takes one expression per attribute (operators, ternary,
+  object literal and assignment are fine; no arrow function, template literal, second statement,
+  comma operator, `window` or `document`, `x-html`). An unknown name in an attribute throws.
+  Checked by parsing all 98 template expressions with the package's own parser and by reading its
+  evaluator, not in a browser.
+  Left open by it: the browser pass (watch the console for "CSP Parser Error" and "Undefined
+  variable" on login, register, the three lists, add role and upload; click both Cancel buttons);
+  `skills/htmx-patterns/reference/flowbite-alpine.md` says the CSP build takes a property name or
+  a method call only, which is stricter than 3.17.4 is (change it through a proposal or keep it
+  as the house rule); the guard does not see a `{% if %}` block inside an Alpine attribute value.
 - [ ] **Security**: `app/database/security.py` logs the auth secret (`logger.critical(SECRET)`) and
   defaults it to `my_default_secret_key`: remove the log, refuse to start on the default. The
   superuser comes from the environment or a command, not a fixed password at startup. Add
