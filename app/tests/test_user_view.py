@@ -208,3 +208,14 @@ async def test_superuser_cannot_delete_their_own_account(
     db_session.expire_all()
     found = await db_session.execute(select(User).where(User.email == EMAIL))
     assert found.scalar_one_or_none() is not None
+
+
+async def test_user_profile_markup_is_escaped_in_the_list(
+    client, logged_in, stored_user, db_session
+):
+    payload = "<script>alert(1)</script>"
+    stored_user.profile.first_name = payload
+    await db_session.commit()
+    response = await client.get("/user", headers=HX)
+    assert payload not in response.text
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in response.text

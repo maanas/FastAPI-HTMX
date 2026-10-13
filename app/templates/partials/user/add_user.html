@@ -40,7 +40,7 @@
       {% if error_messages %}
       <div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
         {% for error in error_messages %}
-        <span class="font-medium">{{ error | e }}</span><br />
+        <span class="font-medium">{{ error }}</span><br />
         {% endfor %}
       </div>
       {% endif %}

@@ -6,7 +6,7 @@
     {% if error_messages %}
     <div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
       {% for error in error_messages %}
-      <span class="font-medium">{{ error | e }}</span><br />
+      <span class="font-medium">{{ error }}</span><br />
       {% endfor %}
     </div>
     {% endif %}
@@ -16,18 +16,18 @@
       x-data
       hx-target="#dashboard-body"
       hx-put="{{ url_for('post_update_user', user_id=user.id) }}"
-      hx-headers='{"X-CSRF-Token": "{{ (csrf_token or '') | e }}"}'
+      hx-headers='{"X-CSRF-Token": "{{ (csrf_token or '') }}"}'
       hx-swap="outerHTML"
     >
       <h2 class="mb-4 text-xl font-semibold text-heading">General Profile</h2>
       <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
           <label for="first_name" class="block mb-2.5 text-sm font-medium text-heading">First Name</label>
-          <input type="text" id="first_name" name="first_name" placeholder="First Name" value="{{ user.profile.first_name | e }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="first_name" name="first_name" placeholder="First Name" value="{{ user.profile.first_name }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="last_name" class="block mb-2.5 text-sm font-medium text-heading">Last Name</label>
-          <input type="text" id="last_name" name="last_name" placeholder="Last Name" value="{{ user.profile.last_name | e }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="last_name" name="last_name" placeholder="Last Name" value="{{ user.profile.last_name }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="gender" class="block mb-2.5 text-sm font-medium text-heading">Gender</label>
@@ -43,24 +43,24 @@
         </div>
         <div>
           <label for="address" class="block mb-2.5 text-sm font-medium text-heading">Address</label>
-          <input type="text" id="address" name="address" placeholder="Primary Address" value="{{ user.profile.address | e }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="address" name="address" placeholder="Primary Address" value="{{ user.profile.address }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="city" class="block mb-2.5 text-sm font-medium text-heading">City</label>
-          <input type="text" id="city" name="city" placeholder="City" value="{{ user.profile.city | e }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="city" name="city" placeholder="City" value="{{ user.profile.city }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="country" class="block mb-2.5 text-sm font-medium text-heading">Country</label>
-          <input type="text" id="country" name="country" placeholder="Country" value="{{ user.profile.country | e }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="country" name="country" placeholder="Country" value="{{ user.profile.country }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="phone" class="block mb-2.5 text-sm font-medium text-heading">Phone number:</label>
-          <input type="text" id="phone" name="phone" value="{{ user.profile.phone | e }}" aria-describedby="helper-text-explanation" pattern="^(\+?1?\s*?\(?\d{3}[\)\-\s]?\d{3}[\-\s]?\d{4}|\+?\d{2}?\s?\d{4}\s?\d{6})$" placeholder="USA: (123) 456-7890 or UK: 01234 567890 or Australia: 0412 345 678" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="phone" name="phone" value="{{ user.profile.phone }}" aria-describedby="helper-text-explanation" pattern="^(\+?1?\s*?\(?\d{3}[\)\-\s]?\d{3}[\-\s]?\d{4}|\+?\d{2}?\s?\d{4}\s?\d{6})$" placeholder="USA: (123) 456-7890 or UK: 01234 567890 or Australia: 0412 345 678" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
           <p id="helper-text-explanation" class="mt-2.5 text-sm text-body">Select a phone number that matches the format.</p>
         </div>
         <div>
           <label for="company" class="block mb-2.5 text-sm font-medium text-heading">Company</label>
-          <input type="text" id="company" name="company" placeholder="Company" value="{{ user.profile.company | e }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="company" name="company" placeholder="Company" value="{{ user.profile.company }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
       </div>
       <h2 class="mb-4 mt-8 text-xl font-semibold text-heading">Role Allocation</h2>
@@ -69,14 +69,14 @@
         <select id="role-selection" name="role_id" required class="block w-full px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body">
           <option value="">Select a role</option>
           {% for role in roles %}
-          <option value="{{ role.id }}" {% if user.role and user.role.id == role.id %}selected{% endif %}>{{ role.role_name | e }}</option>
+          <option value="{{ role.id }}" {% if user.role and user.role.id == role.id %}selected{% endif %}>{{ role.role_name }}</option>
           {% endfor %}
         </select>
       </div>
       {% if error_messages %}
       <div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
         {% for error in error_messages %}
-        <span class="font-medium">{{ error | e }}</span><br />
+        <span class="font-medium">{{ error }}</span><br />
         {% endfor %}
       </div>
       {% endif %}

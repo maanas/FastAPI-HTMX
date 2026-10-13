@@ -6,7 +6,7 @@
     {% if error_messages %}
     <div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
       {% for error_message in error_messages %}
-      <span class="font-medium">{{ error_message | e }}</span>
+      <span class="font-medium">{{ error_message }}</span>
       {% endfor %}
     </div>
     {% else %}
@@ -16,7 +16,7 @@
       x-init="$watch('isUpdated', value => { if (value) setTimeout(() => { isUpdated = false }, 3000) });
               $watch('isAdded', value => { if (value) setTimeout(() => { isAdded = false }, 3000) });
               $watch('isDeleted', value => { if (value) setTimeout(() => { isDeleted = false }, 3000) })"
-      hx-headers='{"X-CSRF-Token": "{{ (csrf_token or '') | e }}"}'
+      hx-headers='{"X-CSRF-Token": "{{ (csrf_token or '') }}"}'
     >
       <div x-show="isUpdated" x-transition:leave="transition ease-in duration-1000" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
         <span class="font-medium" x-text="message"></span>
@@ -44,7 +44,7 @@
           <tbody>
             {% for user in users %}
             <tr class="bg-neutral-primary border-b border-default">
-              <th scope="row" class="px-6 py-4 font-medium text-heading whitespace-nowrap">{{ user.email | e }}</th>
+              <th scope="row" class="px-6 py-4 font-medium text-heading whitespace-nowrap">{{ user.email }}</th>
               <td class="px-6 py-4">
                 {% if user.is_active %}
                 <span class="bg-success-soft text-fg-success-strong text-xs font-medium px-1.5 py-0.5 rounded">Yes</span>
@@ -59,7 +59,7 @@
                 <span class="bg-neutral-secondary-medium text-heading text-xs font-medium px-1.5 py-0.5 rounded">No</span>
                 {% endif %}
               </td>
-              <td class="px-6 py-4">{% if user.role and user.role.role_name %}{{ user.role.role_name | e }}{% else %}Not Available{% endif %}</td>
+              <td class="px-6 py-4">{% if user.role and user.role.role_name %}{{ user.role.role_name }}{% else %}Not Available{% endif %}</td>
               <td class="px-6 py-4">{{ user.created.strftime('%d-%m-%Y') }}</td>
               <td class="px-6 py-4">
                 <button data-popover-target="popover-user-{{ user.id }}" type="button" class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none">User profile</button>
@@ -93,10 +93,10 @@
       <div data-popover id="popover-user-{{ user.id }}" role="tooltip" class="absolute z-10 invisible inline-block w-64 text-sm text-body transition-opacity duration-300 bg-neutral-primary-soft border border-default rounded-base shadow-xs opacity-0">
         <div class="p-3">
           {% if user.profile %}
-          <p class="text-sm font-semibold text-heading">{{ user.profile.first_name | e }} {{ user.profile.last_name | e }}</p>
-          <p class="mb-1 text-sm font-normal text-body">Phone: {{ user.profile.phone | e }}</p>
+          <p class="text-sm font-semibold text-heading">{{ user.profile.first_name }} {{ user.profile.last_name }}</p>
+          <p class="mb-1 text-sm font-normal text-body">Phone: {{ user.profile.phone }}</p>
           <p class="mb-1 text-sm font-normal text-body">Birth Date: {{ user.profile.date_of_birth.strftime('%d %b %Y') if user.profile.date_of_birth else 'Not provided' }}</p>
-          <p class="text-sm font-normal text-body">Company: {{ user.profile.company | e }}</p>
+          <p class="text-sm font-normal text-body">Company: {{ user.profile.company }}</p>
           {% else %}
           <p class="text-sm font-normal text-body">No profile yet</p>
           {% endif %}
