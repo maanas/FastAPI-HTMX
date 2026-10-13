@@ -25,6 +25,6 @@ description: HTMX 2 patterns for this FastAPI + Jinja2 starter - partial versus 
 | [reference/flowbite-alpine.md](reference/flowbite-alpine.md) | Flowbite or Alpine inside swapped content, or JS that listens to htmx events |
 | [reference/testing.md](reference/testing.md) | Testing a route that answers HTMX |
 
-The target is htmx 2.x vendored in `app/static/js/`. The file from upstream is still 1.9.6 until the
-vendoring step in `TODO.md` is done: check the version before relying on a 2.x behaviour.
+htmx is 2.0.11, vendored at `app/static/vendor/htmx/htmx.min.js` (see `VENDORED.md`). The app's own
+scripts stay in `app/static/js/`.
 Official reference: https://htmx.org/reference/ and https://htmx.org/migration-guide-htmx-1/.

@@ -29,8 +29,9 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   (TestClient) on the upgraded stack, not in a browser.
 - Workers get their settings as environment variables, never a `.env` file: the ten names are in
   `.env.example`.
-- Two retro proposals wait for the owner in `.claude/learning/proposals/` (checker: no `ls` of
-  `.env`, no `timeout`; coder: stop a server by PID, never `pkill` by name).
+- Two retro proposals were approved and applied on 2026-10-13 (checker: no `ls` of `.env`, no
+  `timeout`; coder: stop a server by PID, never `pkill` by name). The owner also approved the
+  security, htmx and other items in the change list below as work to do.
 - Branch `feat/vendor-assets` is pull request #3 (https://github.com/maanas/FastAPI-HTMX/pull/3),
   stacked on `fix/clean-clone-start`: merge #2 first (2026-10-13). No template loads
   from a CDN any more. Flowbite JS 4.0.2, Alpine 3.17.4 and htmx 2.0.11 are vendored under
@@ -80,8 +81,6 @@ in variables in one place (colours are decided later, keep Flowbite's default th
     with an `onclick` handler: both go when the strict content security policy comes.
   - `handle_error` (`app/routes/view/errors.py`) answers 200 with an error body for every
     failure, including a missing CSRF header: a rejected request should be a 4xx.
-  - `skills/htmx-patterns` still says htmx is 1.9.6 in `app/static/js/` (a skill changes only
-    through an approved proposal).
 - [ ] **CSS build**: Tailwind v4 with its standalone CLI, one tokens file with Flowbite's theme
   variables, built CSS committed. Open: whether Flowbite's Tailwind plugin (`theme/flowbite/plugin.js`)
   loads in the standalone CLI without `node_modules`; if not, say so before adding Node.
