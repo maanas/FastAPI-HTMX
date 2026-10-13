@@ -4,8 +4,8 @@ Fork of Hybridhash/FastAPI-HTMX (`upstream`), kept at `github.com/maanas/FastAPI
 SSH as `maanas`). Pull requests are opened by Claude on its own at the end of a task, with the `gh`
 CLI and a full description (the `pull-request` skill): always `--repo maanas/FastAPI-HTMX --base
 main`, because `gh` targets the upstream parent of a fork by default. Only maanas merges.
-`gh` must be logged in as `maanas`; on 2026-10-13 the Mac Pro had only `kkuvam` (read-only on this
-repo): run `gh auth login` as `maanas` once before the first pull request.
+`gh` on the Mac Pro is logged in as `maanas` (active, admin on this repo) and `kkuvam` (read-only
+here); the skill checks the active account and switches to `maanas`.
 Goal (decided 2026-10-13): a basic working starter for our FastAPI apps on Tailwind CSS v4 +
 Flowbite v4 + Alpine.js + HTMX with Jinja2. Its first user is medusa's app in the spider repo
 (`~/Sites/minelytics/spider`, `medusa/app/`, step 2 in that repo's `TODO.md`), built from this
@@ -16,20 +16,25 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- `main` equals upstream (4d8969e). Branch `chore/starter-setup` (local, not pushed) adds
+- `main` equals upstream (4d8969e). Branch `chore/starter-setup` is pull request #1
+  (https://github.com/maanas/FastAPI-HTMX/pull/1, open, waiting for maanas to merge). It adds
   `theme/flowbite` (submodule, Flowbite v4.0.2: component markup in `content/components/*.md`,
   theme variables in `src/themes/`, app shell in `layouts/dashboard.html`; reference only, nothing
   loads from it at runtime) and this file.
-- Committed on the branch (2026-10-13, not pushed): `.vscode/` removed; `CLAUDE.md`; `.claude/` with the ECC
+- Also on the branch (2026-10-13): `.vscode/` removed; `CLAUDE.md`; `.claude/` with the ECC
   skills (`~/bin/ecc.sh`), the dev team adapted from the spider repo (`coder`, `reviewer`,
   `checker`, `committer`, `retro`, the `commit` and `learning-report` skills) and its two hooks, and
   four skills written for this repo: `flowbite` (component lookup in the submodule), `htmx-patterns`,
-  `new-page` (these three in `skills/`, linked into `.claude/skills/`) and `pull-request`. There is no official Flowbite or htmx skill
-  (checked 2026-10-13): Themesberg ships an MCP server (`npx flowbite-mcp`, needs Node) that covers
+  `new-page` (these three in `skills/`, linked into `.claude/skills/`) and `pull-request`. There is
+  no official Flowbite or htmx skill (checked 2026-10-13): Themesberg ships an MCP server (`npx flowbite-mcp`, needs Node) that covers
   what the submodule already holds; the htmx skills are third-party.
 - The app was run once on 2026-10-13 in a scratch copy (uv, Python 3.12, SQLite). It starts and
   serves `/login`, `/register` and `/docs` after the fixes marked "found in the run" below. Login
   in a browser was not tried.
+- The agents and the project skills have not been used on a real task yet: expect the first task
+  to show what to fix in them (retro proposes, the owner approves).
+- Next: merge pull request #1, then in a new session start the first open item below on a new
+  branch from `main`.
 
 ## Change list
 
