@@ -16,25 +16,45 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- `main` equals upstream (4d8969e). Branch `chore/starter-setup` is pull request #1
-  (https://github.com/maanas/FastAPI-HTMX/pull/1, open, waiting for maanas to merge). It adds
-  `theme/flowbite` (submodule, Flowbite v4.0.2: component markup in `content/components/*.md`,
-  theme variables in `src/themes/`, app shell in `layouts/dashboard.html`; reference only, nothing
-  loads from it at runtime) and this file.
-- Also on the branch (2026-10-13): `.vscode/` removed; `CLAUDE.md`; `.claude/` with the ECC
-  skills (`~/bin/ecc.sh`), the dev team adapted from the spider repo (`coder`, `reviewer`,
-  `checker`, `committer`, `retro`, the `commit` and `learning-report` skills) and its two hooks, and
-  four skills written for this repo: `flowbite` (component lookup in the submodule), `htmx-patterns`,
-  `new-page` (these three in `skills/`, linked into `.claude/skills/`) and `pull-request`. There is
-  no official Flowbite or htmx skill (checked 2026-10-13): Themesberg ships an MCP server (`npx flowbite-mcp`, needs Node) that covers
-  what the submodule already holds; the htmx skills are third-party.
+- Pull request #1 is merged (2026-10-13): `main` holds the Flowbite submodule, `CLAUDE.md`, the dev
+  team in `.claude/` and the project skills.
+- Git identity for this repo is `Maanas Royy <m4manas@gmail.com>` (local config, there is no
+  global email). The fork's commits were recreated with it on 2026-10-13, so `main` was force
+  pushed once by maanas.
 - The app was run once on 2026-10-13 in a scratch copy (uv, Python 3.12, SQLite). It starts and
   serves `/login`, `/register` and `/docs` after the fixes marked "found in the run" below. Login
   in a browser was not tried.
-- The agents and the project skills have not been used on a real task yet: expect the first task
-  to show what to fix in them (retro proposes, the owner approves).
-- Next: merge pull request #1, then in a new session start the first open item below on a new
-  branch from `main`.
+
+## Task in progress: make it start from a clean clone
+
+Branch `fix/clean-clone-start` from `main`. One step per commit: coder, reviewer, checker,
+committer. Settings go to the workers as environment variables, never a `.env` file:
+`DATABASE_URL`, `CSRF_SECRET_KEY`, `MINIO_URL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`,
+`MINIO_BUCKET`, `COOKIE_SAMESITE`, `COOKIE_SECURE`.
+
+- [x] 1. Dependencies on uv, old versions kept, pydantic capped below 2.12 (4193058).
+- [ ] 2. Upgrade every direct dependency to its latest release and pin it with `==` in
+  `pyproject.toml` (owner's request), including pytest and ruff; fix
+  `app/schema/pydantic_base.py` for pydantic 2.12+ (`make_field_optional` sets a default on a field
+  that has a `default_factory`) and lift the cap; ruff config to the `[tool.ruff.lint]` format.
+- [ ] 3. Initial migration committed. The server dies at startup on a fresh database
+  (`no such table: users`, the superuser seed). Borrow from tasx (`~/Sites/minelytics/tasx`, read
+  `origin/main` with `git show`, its checkout is diverged and dirty): numbered revision names
+  (`0001_initial_schema`), URL from settings with no print, a synchronous engine in `env.py`.
+- [ ] 4. `app/tests/test_view_crud.py` collects and passes (wrong `engine` import, wrong column
+  names, async tests need the anyio marker).
+- [ ] 5. `.env.example`, `AUTH_SECRET` in the README and `setup.ps1`, uv commands in the README
+  and `CLAUDE.md` (`COOKIE_SAMESITE` must be lowercase `lax`, `strict` or `none` since
+  fastapi-csrf-protect 1.0.7, and `none` needs `COOKIE_SECURE=true`); then retro and the pull
+  request.
+
+Ledger so far (for retro). Step 1: coder 2 rounds (the director's first brief let uv re-resolve,
+pydantic 2.14 broke the import, second brief locked the old pins; brief also missed the two
+`COOKIE_*` variables), about 36k tokens; reviewer approved in round 1, 23k; checker passed all but
+the smoke request (missing tables, step 3), 18k; committer. Owner's corrections in chat: use uv;
+upgrade and pin everything; author and git identity Maanas Royy; look at tasx for Alembic.
+Step 2: coder 1 round, 58k (sqlalchemy held at 2.0.54; Starlette 1.x `TemplateResponse` argument
+order fixed at 15 sites); reviewer approved in round 1, 59k, and ran the auth flows in-process.
 
 ## Change list
 
@@ -71,10 +91,18 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   superuser comes from the environment or a command, not a fixed password at startup. Add
   security headers with a strict content security policy (own origin only, no inline script).
   htmx: `allowEval=false`, `includeIndicatorStyles=false`, `selfRequestsOnly=true`.
+  Found in the review of the upgrade (2026-10-13), both older than it: `verify_jwt` in
+  `app/database/security.py:110` calls the async `on_decode_jwt` without `await`, so the payload is
+  always truthy and any cookie value passes that check; `app/routes/view/upload.py:43` awaits the
+  non-async `handle_error`, a TypeError on the upload error path.
 - [ ] **Housekeeping**: static and template paths relative to the package (today relative to the
   working directory), a LICENSE file (the README says MIT, the repo has none: ask upstream or
-  state it for our changes), ruff and pytest brought up to date (ruff is pinned at 0.0.291), `setup.ps1` and the Windows path
+  state it for our changes), the 49 existing ruff findings, sqlalchemy 2.1 once
+  fastapi-users-db-sqlalchemy allows it (held at 2.0.54), `setup.ps1` and the Windows path
   in the README, `@app.on_event` to a lifespan handler, tests (3 files today).
 - [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
   `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
   and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
+- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
+  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
+  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.
