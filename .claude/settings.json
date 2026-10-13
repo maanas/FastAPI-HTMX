@@ -1,0 +1,42 @@
+{
+  "enabledPlugins": {
+    "ecc@ecc": false
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "allow": [
+      "Bash(uvx ruff *)",
+      "Bash(.venv/bin/python -m pytest *)",
+      "Bash(.venv/bin/python -m py_compile *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(**/.env)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/protected-files.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-guard.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

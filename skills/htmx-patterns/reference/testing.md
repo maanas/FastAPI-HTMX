@@ -1,0 +1,17 @@
+# Testing a route that answers HTMX
+
+Tests live in `app/tests/`, run with `.venv/bin/python -m pytest -q app/tests`.
+
+For each route:
+
+1. Without the header: status `200`, the body contains `<html`.
+2. With `headers={"HX-Request": "true"}`: status `200`, the body has no `<html` and contains the
+   root `id` the trigger targets.
+3. Signed out, with the header: an `HX-Redirect` header, not a `3xx`.
+4. A write without `X-CSRF-Token`: refused, nothing stored.
+5. An invalid form: `422` and the message in the body.
+6. Each `HX-*` header the route sets: assert its value (`json.loads` for `HX-Trigger`).
+
+Use `httpx.AsyncClient` with `ASGITransport(app=app)` and override `current_active_user` and the
+session dependency through `app.dependency_overrides`; do not sign in through the login route in
+every test.
