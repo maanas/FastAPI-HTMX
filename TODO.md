@@ -33,10 +33,8 @@ committer. Settings go to the workers as environment variables, never a `.env` f
 `MINIO_BUCKET`, `COOKIE_SAMESITE`, `COOKIE_SECURE`.
 
 - [x] 1. Dependencies on uv, old versions kept, pydantic capped below 2.12 (4193058).
-- [ ] 2. Upgrade every direct dependency to its latest release and pin it with `==` in
-  `pyproject.toml` (owner's request), including pytest and ruff; fix
-  `app/schema/pydantic_base.py` for pydantic 2.12+ (`make_field_optional` sets a default on a field
-  that has a `default_factory`) and lift the cap; ruff config to the `[tool.ruff.lint]` format.
+- [x] 2. Every direct dependency at its latest release and pinned with `==`, with the code fixes
+  that forced (0041f15). sqlalchemy stays on 2.0.54: fastapi-users-db-sqlalchemy 7 needs below 2.1.
 - [ ] 3. Initial migration committed. The server dies at startup on a fresh database
   (`no such table: users`, the superuser seed). Borrow from tasx (`~/Sites/minelytics/tasx`, read
   `origin/main` with `git show`, its checkout is diverged and dirty): numbered revision names
@@ -55,6 +53,8 @@ the smoke request (missing tables, step 3), 18k; committer. Owner's corrections 
 upgrade and pin everything; author and git identity Maanas Royy; look at tasx for Alembic.
 Step 2: coder 1 round, 58k (sqlalchemy held at 2.0.54; Starlette 1.x `TemplateResponse` argument
 order fixed at 15 sites); reviewer approved in round 1, 59k, and ran the auth flows in-process.
+Checker passed, 60k (its own flow script had one cookie bug, fixed and rerun). Committer 2 commits.
+Next: step 3 with the coder.
 
 ## Change list
 
