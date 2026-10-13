@@ -149,6 +149,18 @@ document.addEventListener("alpine:init", () => {
   }));
 });
 
+document.addEventListener("alpine:init", () => {
+  // A required input with its own message: the template sets x-data="requiredMessage",
+  // x-on:htmx:validation:validate="validate" and data-required-message="..."
+  Alpine.data("requiredMessage", () => ({
+    validate() {
+      this.$el.setCustomValidity(
+        this.$el.value === "" ? this.$el.dataset.requiredMessage : "",
+      );
+    },
+  }));
+});
+
 // Store pending alerts during page transitions
 window.pendingAlerts = [];
 

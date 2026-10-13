@@ -27,11 +27,9 @@
           id="group-type"
           name="group_name"
           placeholder="Project Manager"
-          _="on htmx:validation:validate
-                if my.value == ''
-                    call me.setCustomValidity('Please enter the group Type')
-                else
-                    call me.setCustomValidity('')"
+          x-data="requiredMessage"
+          x-on:htmx:validation:validate="validate"
+          data-required-message="Please enter the group Type"
           value="{{ group.group_name }}"
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"

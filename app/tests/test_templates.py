@@ -12,6 +12,7 @@ from app.tests.template_rules import template_rule_violations
 APP = Path(__file__).resolve().parents[1]
 TEMPLATES = APP / "templates"
 BUILT_CSS = APP / "static" / "css" / "app.css"
+OWN_JS = sorted((APP / "static" / "js").glob("*.js"))
 ALL_TEMPLATES = sorted(TEMPLATES.rglob("*.html"))
 
 # Classes that are JS or test hooks and have no CSS rule on purpose, one comment each.
@@ -24,6 +25,16 @@ QUOTED = re.compile(r"'([^']*)'|\"([^\"]*)\"")
 CSS_SELECTOR_CLASS = re.compile(r"(?<![\d\w])\.((?:\\.|[\w-])+)")
 CSS_HEX_ESCAPE = re.compile(r"\\([0-9a-fA-F]{1,6})\s?")
 CSS_CHAR_ESCAPE = re.compile(r"\\(.)")
+HYPERSCRIPT = re.compile(r"hyperscript", re.I)
+# Hyperscript's attributes: _="...", script="..." and data-script="..."
+HYPERSCRIPT_ATTRS = ("_", "script", "data-script")
+# Inputs that carry their own required message through the requiredMessage component.
+REQUIRED_MESSAGE_TEMPLATES = (
+    "partials/group/add_group.html",
+    "partials/group/edit_group.html",
+    "partials/role/edit_role.html",
+    "partials/user/add_user.html",
+)
 
 
 class _Scanner(HTMLParser):
@@ -34,6 +45,8 @@ class _Scanner(HTMLParser):
         self.loads = []  # (kind, url) for script src and stylesheet href
         self.urls = []  # (attr, url) for every attribute that fetches a page or file
         self.classes = set()
+        self.attr_names = set()
+        self.required_inputs = []  # (data-required-message, validate handler) each
 
     def handle_starttag(self, tag, attrs):
         attrs = {name: value or "" for name, value in attrs}
@@ -43,9 +56,17 @@ class _Scanner(HTMLParser):
             self.urls.append(("link href", attrs["href"]))
             if "stylesheet" in attrs.get("rel", "").lower():
                 self.loads.append(("stylesheet href", attrs["href"]))
+        self.attr_names.update(attrs)
         for name in URL_ATTRS:
             if name in attrs:
                 self.urls.append((name, attrs[name]))
+        if attrs.get("x-data") == "requiredMessage":
+            self.required_inputs.append(
+                (
+                    attrs.get("data-required-message", ""),
+                    attrs.get("x-on:htmx:validation:validate", ""),
+                )
+            )
         if "srcset" in attrs:
             for candidate in attrs["srcset"].split(","):
                 self.urls.append(("srcset", candidate.strip().split(" ")[0]))
@@ -156,3 +177,42 @@ def test_url_check_flags_absolute_and_protocol_relative_urls():
         "srcset",
     ]
     assert found.loads == [("stylesheet href", "/a.css")]
+
+
+@pytest.mark.parametrize("path", ALL_TEMPLATES, ids=ids)
+def test_template_has_no_hyperscript(path):
+    text = path.read_text(encoding="utf-8")
+    assert not HYPERSCRIPT.search(text)
+    assert not scan(text).attr_names & set(HYPERSCRIPT_ATTRS)
+
+
+def test_hyperscript_is_gone_from_static_files():
+    assert not (APP / "static" / "vendor" / "hyperscript").exists()
+    assert OWN_JS
+    for path in OWN_JS:
+        assert not HYPERSCRIPT.search(path.read_text(encoding="utf-8")), path
+
+
+@pytest.mark.parametrize("name", REQUIRED_MESSAGE_TEMPLATES)
+def test_required_input_uses_the_required_message_component(name):
+    found = scan((TEMPLATES / name).read_text(encoding="utf-8"))
+    assert len(found.required_inputs) == 1
+    message, handler = found.required_inputs[0]
+    assert message.strip()
+    assert handler == "validate"
+
+
+def test_components_js_registers_required_message():
+    assert 'Alpine.data("requiredMessage"' in (
+        APP / "static" / "js" / "components.js"
+    ).read_text(encoding="utf-8")
+
+
+def test_hyperscript_check_finds_its_attributes():
+    found = scan('<input _="on click" data-script="x"><p script="y"></p>')
+    assert found.attr_names & set(HYPERSCRIPT_ATTRS) == set(HYPERSCRIPT_ATTRS)
+
+
+def test_required_message_check_needs_the_validate_handler():
+    html = '<input x-data="requiredMessage" data-required-message="m">'
+    assert scan(html).required_inputs == [("m", "")]
