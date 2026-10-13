@@ -16,19 +16,17 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- Pull requests #1 to #5 are merged (2026-10-13). `main` holds the uv setup with pinned
-  dependencies, the vendored assets, the CSS build, and the first four steps of the template task
-  (shell, login and register, user pages, Jinja autoescape).
+- Pull requests #1 to #6 are merged (2026-10-13). `main` holds the uv setup with pinned
+  dependencies, the vendored assets, the CSS build and the whole template task: every template is
+  Flowbite 4.0.2 markup (3,592 lines down to 1,387).
 - Git identity for this repo is `Maanas Royy <m4manas@gmail.com>` (local config, there is no
   global email). The fork's commits were recreated with it on 2026-10-13, so `main` was force
   pushed once by maanas.
-- Branch `feat/templates-flowbite-v4` holds the rest of the template task (role, groups, upload,
-  the sweep) and is the next pull request to merge. With it every template is Flowbite 4.0.2
-  markup (3,592 lines down to 1,387) and the suite has 255 tests.
+- Branch `feat/hyperscript-out` removes hyperscript and is the next pull request to merge. With
+  it the suite has 296 tests.
 - Versions checked on 2026-10-13: every pinned package and vendored file is at its latest release
   (Flowbite 4.0.2, Alpine 3.17.4, htmx 2.0.11, Tailwind CLI 4.3.3, Inter 5.3.0, all direct Python
-  dependencies), except sqlalchemy (held at 2.0.54 by fastapi-users-db-sqlalchemy) and hyperscript
-  0.9.11 (latest 0.9.93, removed by the next item instead).
+  dependencies), except sqlalchemy (held at 2.0.54 by fastapi-users-db-sqlalchemy).
 - Nothing has been opened in a browser yet. Requests against a started app and the tests cover
   the pages, but the sidebar drawer, logout, popovers, the alerts after a create or delete, and
   login through the real page are unverified as clicks. No upload, download or delete has run
@@ -40,7 +38,7 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Three retro proposals were approved and applied on 2026-10-13 (checker: no `ls` of `.env`, no
   `timeout`; coder: stop a server by PID, never `pkill` by name; checker: exported settings
   instead of stopping on a missing `.env`).
-- Next: "Hyperscript out".
+- Next: "Alpine CSP build", then "Security".
 
 ## Change list
 
@@ -64,9 +62,9 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   type, the login cookie on http, `setup.ps1`.
 - [x] **Assets off the CDNs** (2026-10-13, branch `feat/vendor-assets`): Flowbite JS 4.0.2, Alpine
   3.17.4 and htmx 2.0.11 vendored from the npm registry tarballs with curl (no Node), listed in
-  `VENDORED.md`. Two files are vendored only until their own item replaces them: the Flowbite
-  1.8.1 stylesheet ("CSS build"; it holds three unused S3 image URLs) and hyperscript 0.9.11
-  ("Hyperscript out"). htmx 2 sends DELETE parameters in the URL: the group and file delete routes
+  `VENDORED.md`. Two files were vendored only until their own item replaced them, and both are
+  gone: the Flowbite 1.8.1 stylesheet ("CSS build") and hyperscript 0.9.11 ("Hyperscript out").
+  htmx 2 sends DELETE parameters in the URL: the group and file delete routes
   now read the query string.
 - [ ] **htmx leftovers** found in the htmx 2 audit (2026-10-13). Closed by the template task: the
   missing CSRF check on `delete_file`, the string-built `hx-vals`, the `response-targets`
@@ -125,12 +123,20 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - Upload: if the refresh after a committed insert fails, the cleanup removes the object and the
     row stays; nothing caps the request body except the `Content-Length` check (cap it at the
     proxy); an upload takes about 6 seconds to fail when MinIO is down (client retries).
-- [ ] **Hyperscript out**: 4 templates still use it (`partials/group/add_group.html`,
-  `edit_group.html`, `partials/role/edit_role.html`, `partials/user/add_user.html`), all for the
-  same name validation; move them to Alpine and drop the library and its script tag in
-  `base/base.html`.
-- [ ] **Alpine CSP build** (`@alpinejs/csp`) if the 11 `x-data` uses can live in `Alpine.data()`
-  components, so the content security policy needs no `unsafe-eval`. Not tried yet.
+- [x] **Hyperscript out** (2026-10-13, branch `feat/hyperscript-out`): the four inputs that used
+  it (`partials/group/add_group.html`, `edit_group.html`, `partials/role/edit_role.html`,
+  `partials/user/add_user.html`) now use one Alpine component, `requiredMessage` in
+  `app/static/js/components.js`, with the message in `data-required-message`. The library, its
+  script tag and its `VENDORED.md` row are gone, and `test_templates.py` fails if any of it
+  returns. Checked by reading the vendored Alpine and htmx source, not in a browser.
+  Left open by it: the custom message ("Please enter the Group Type") probably never shows for an
+  empty field, before or after this change, because the browser's own `required` check stops the
+  submit before htmx fires `htmx:validation:validate`. Either drop the four custom messages or
+  make them work (decide in the browser pass).
+- [ ] **Alpine CSP build** (`@alpinejs/csp`) if the `x-data` uses can live in `Alpine.data()`
+  components, so the content security policy needs no `unsafe-eval`. Of the 14 uses, 6 already
+  name a component (`login`, `register`, four `requiredMessage`), 3 are a bare `x-data` and 5 are
+  inline objects (`role/add_role.html`, the three list fragments, `upload.html`). Not tried yet.
 - [ ] **Security**: `app/database/security.py` logs the auth secret (`logger.critical(SECRET)`) and
   defaults it to `my_default_secret_key`: remove the log, refuse to start on the default. The
   superuser comes from the environment or a command, not a fixed password at startup. Add
