@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -7,14 +6,12 @@ from httpx import ASGITransport, AsyncClient
 
 from app.app import app
 from app.database.security import current_active_user
+from app.tests.template_rules import template_rule_violations
 
 pytestmark = pytest.mark.anyio
 
 TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
 SHELL_DIRS = (TEMPLATES / "base", TEMPLATES / "partials" / "shell")
-SCRIPT_WITHOUT_SRC = re.compile(r"<script\b(?![^>]*\bsrc\s*=)", re.I)
-INLINE_STYLE = re.compile(r"<[^>]*\sstyle\s*=", re.I)
-INLINE_HANDLER = re.compile(r"<[^>]*\son[a-z]+\s*=", re.I)
 ADMIN_LINKS = ("/role", "/user", "/groups", "/uploads")
 
 
@@ -70,6 +67,4 @@ def test_shell_templates_have_no_inline_script_style_or_handler():
     assert files
     for path in files:
         text = path.read_text(encoding="utf-8")
-        assert not SCRIPT_WITHOUT_SRC.search(text), path
-        assert not INLINE_STYLE.search(text), path
-        assert not INLINE_HANDLER.search(text), path
+        assert not template_rule_violations(text), path
