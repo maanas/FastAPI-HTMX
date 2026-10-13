@@ -1,77 +1,71 @@
-{% extends "base/auth_base.html" %} {% block title %} Edit Role | FastAPI HTMX
-{% endblock %} {% block content %}
-
-<form
-  id="edit-role-form"
-  hx-target="this"
-  hx-put="{{url_for('post_update_role', role_id=role.id)}}"
-  hx-swap="outerHTML"
-  hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'
->
-  <div class="mb-6">
-    <label
-      for="role-type"
-      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-      >Role Type</label
+{# Fragment, no layout. Root id is the sidebar link's hx-target. #}
+{# Form: theme/flowbite/content/forms/input-field.md "Input fields"; alerts.md "Default alert" #}
+<div id="dashboard-body" class="p-4 sm:ml-64 mt-14">
+  <div class="p-4 border-1 border-default border-dashed rounded-base">
+    {% if not role %}
+    {% if error_messages %}
+    <div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
+      {% for error in error_messages %}
+      <span class="font-medium">{{ error }}</span><br />
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% else %}
+    <h1 class="mb-4 text-xl font-semibold text-heading">Edit Role</h1>
+    <form
+      id="edit-role-form"
+      x-data
+      hx-target="#dashboard-body"
+      hx-put="{{ url_for('post_update_role', role_id=role.id) }}"
+      hx-swap="outerHTML"
+      hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
     >
-    <input
-      type="text"
-      id="role-type"
-      name="role_name"
-      class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-sm-light"
-      placeholder="Project Manager"
-      _="on htmx:validation:validate
+      <div class="mb-6">
+        <label for="role-type" class="block mb-2.5 text-sm font-medium text-heading">Role Type</label>
+        <input
+          type="text"
+          id="role-type"
+          name="role_name"
+          placeholder="Project Manager"
+          _="on htmx:validation:validate
                 if my.value == ''
                     call me.setCustomValidity('Please enter the Role Type')
                 else
                     call me.setCustomValidity('')"
-      value="{{ role.role_name }}"
-      required
-    />
+          value="{{ role.role_name }}"
+          required
+          class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
+        />
+      </div>
+      <div class="mb-6">
+        <label for="role-desc" class="block mb-2.5 text-sm font-medium text-heading">Role Description</label>
+        <input
+          type="text"
+          id="role-desc"
+          name="role_desc"
+          value="{{ role.role_desc }}"
+          required
+          class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
+        />
+      </div>
+      {% if error_messages %}
+      <div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
+        {% for error in error_messages %}
+        <span class="font-medium">{{ error }}</span><br />
+        {% endfor %}
+      </div>
+      {% endif %}
+      <button type="submit" class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none">Update</button>
+      <button
+        type="button"
+        hx-get="{{ url_for('get_role') }}"
+        hx-target="#dashboard-body"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        @click="$el.closest('form').reset();"
+        class="text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
+      >Cancel</button>
+    </form>
+    {% endif %}
   </div>
-  <div class="mb-6">
-    <label
-      for="role-desc"
-      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-      >Role Description</label
-    >
-    <input
-      type="text"
-      id="role-desc"
-      name="role_desc"
-      value="{{ role.role_desc }}"
-      class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-sm-light"
-      required
-    />
-  </div>
-  {% if error_messages %}
-  <div
-    id="error-message"
-    class="p-4 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300"
-    role="alert"
-  >
-    {% for error in error_messages %}
-    <span class="font-medium">{{ error }}</span><br />
-    {% endfor %}
-  </div>
-  {% endif %}
-  <button
-    type="submit"
-    class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-  >
-    Update
-  </button>
-  <button
-    type="button"
-    hx-boost="true"
-    hx-push-url="true"
-    hx-get="{{ url_for('get_role') }}"
-    hx-swap="outerHTML"
-    hx-target="#dashboard-body"
-    class="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
-    @click="$el.closest('form').reset();"
-  >
-    Cancel
-  </button>
-</form>
-{% endblock %}
+</div>

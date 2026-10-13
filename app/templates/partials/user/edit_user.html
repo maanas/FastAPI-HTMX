@@ -16,7 +16,7 @@
       x-data
       hx-target="#dashboard-body"
       hx-put="{{ url_for('post_update_user', user_id=user.id) }}"
-      hx-headers='{"X-CSRF-Token": "{{ (csrf_token or '') }}"}'
+      hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
       hx-swap="outerHTML"
     >
       <h2 class="mb-4 text-xl font-semibold text-heading">General Profile</h2>

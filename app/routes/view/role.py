@@ -13,11 +13,20 @@ from app.database.security import current_active_user
 from app.models.users import Role as RoleModelDB
 from app.models.users import User as UserModelDB
 from app.routes.view.errors import handle_error
+from app.routes.view.fragments import render_view
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.users import RoleCreate
-from app.templates import templates
 
 role_view_route = APIRouter()
+
+# Fragments (no layout) and the pages that include them, see fragments.py
+ROLE_LIST = "partials/role/role_list.html"
+ROLE_ADD = "partials/role/add_role.html"
+ROLE_EDIT = "partials/role/edit_role.html"
+# Navigation that replaces the content area, as the sidebar link does
+HX_LOCATION_ROLES = json.dumps(
+    {"path": "/role", "target": "#dashboard-body", "swap": "outerHTML"}
+)
 
 
 role_crud = SQLAlchemyCRUD[RoleModelDB](RoleModelDB)
@@ -41,9 +50,10 @@ async def get_role(
         # Access the cookies using the Request object
         roles = await role_crud.read_all(db, skip, limit)
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-        response = templates.TemplateResponse(
+        response = render_view(
             request,
             "pages/role.html",
+            ROLE_LIST,
             {
                 "request": request,
                 "roles": roles,
@@ -56,7 +66,14 @@ async def get_role(
     except Exception as e:
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "pages/role.html", {"request": request, "csrf_token": csrf_token}, e
+            "pages/role.html",
+            {
+                "request": request,
+                "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
+            },
+            e,
+            fragment=ROLE_LIST,
         )
 
 
@@ -74,27 +91,27 @@ async def get_create_roles(
         # Redirecting to the add role page upon successful role creation
 
         csrf_token = request.headers.get("X-CSRF-Token")
-        response = templates.TemplateResponse(
+        return render_view(
             request,
-            "partials/role/add_role.html",
+            "pages/role_add.html",
+            ROLE_ADD,
             {
                 "request": request,
                 "csrf_token": csrf_token,
                 "user_type": current_user.is_superuser,
             },
         )
-
-        return response
     except Exception as e:
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/role/add_role.html",
+            "pages/role_add.html",
             {
                 "request": request,
                 "csrf_token": csrf_token,
                 "user_type": current_user.is_superuser,
             },
             e,
+            fragment=ROLE_ADD,
         )
 
 
@@ -134,7 +151,7 @@ async def post_create_roles(
 
         # Redirecting to the add role page upon successful role creation
         headers = {
-            "HX-Location": "/role",
+            "HX-Location": HX_LOCATION_ROLES,
             "HX-Trigger": json.dumps(
                 {
                     "showAlert": {
@@ -158,13 +175,14 @@ async def post_create_roles(
     except Exception as e:
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/role/add_role.html",
+            "pages/role_add.html",
             {
                 "request": request,
                 "csrf_token": csrf_token,
                 "user_type": current_user.is_superuser,
             },
             e,
+            fragment=ROLE_ADD,
         )
 
 
@@ -177,6 +195,7 @@ async def get_role_by_id(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
+    role = None
     try:
         # checking the current user as super user
         if not current_user.is_superuser:
@@ -185,9 +204,10 @@ async def get_role_by_id(
 
         csrf_token = request.headers.get("X-CSRF-Token")
 
-        response = templates.TemplateResponse(
+        return render_view(
             request,
-            "partials/role/edit_role.html",
+            "pages/role_edit.html",
+            ROLE_EDIT,
             {
                 "request": request,
                 "role": role,
@@ -195,18 +215,18 @@ async def get_role_by_id(
                 "user_type": current_user.is_superuser,
             },
         )
-
-        return response
     except Exception as e:
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/role/edit_role.html",
+            "pages/role_edit.html",
             {
                 "request": request,
+                "role": role,
                 "csrf_token": csrf_token,
                 "user_type": current_user.is_superuser,
             },
             e,
+            fragment=ROLE_EDIT,
         )
 
 
@@ -220,11 +240,14 @@ async def post_update_role(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
+    role = None
     try:
         await csrf_protect.validate_csrf(request)
         # checking the current user as super user
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add roles")
+        # Kept for the error response, which shows the form again
+        role = await role_crud.read_by_primary_key(db, role_id)
 
         form = await request.form()
 
@@ -234,12 +257,20 @@ async def post_update_role(
             role_desc=nh3.clean(str(form.get("role_desc"))),
         )
 
+        # Reject a name another role has: a unique violation would leave the
+        # session unusable for the error response
+        existing_role = await role_crud.read_by_column(
+            db, "role_name", role_update.role_name
+        )
+        if existing_role and existing_role.id != role_id:
+            raise HTTPException(status_code=400, detail="Role name already exists")
+
         await role_crud.update(db, role_id, dict(role_update))
 
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
         # Redirecting to the add role page upon successful role creation
         headers = {
-            "HX-Location": "/role",
+            "HX-Location": HX_LOCATION_ROLES,
             "HX-Trigger": json.dumps(
                 {
                     "showAlert": {
@@ -260,12 +291,17 @@ async def post_update_role(
 
         return response
     except Exception as e:
-        role = await role_crud.read_by_primary_key(db, role_id)
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/role/edit_role.html",
-            {"request": request, "role": role, "csrf_token": csrf_token},
+            "pages/role_edit.html",
+            {
+                "request": request,
+                "role": role,
+                "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
+            },
             e,
+            fragment=ROLE_EDIT,
         )
 
 
@@ -285,12 +321,14 @@ async def delete_role(
             raise HTTPException(
                 status_code=403, detail="Not authorized to delete roles"
             )
+        # The name for the alert comes from the row, not from the client
+        role_to_delete = await role_crud.read_by_primary_key(db, role_id)
+        role_name = role_to_delete.role_name
         await role_crud.delete(db, role_id)
 
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-        role_name = request.headers.get("X-Role-Name")
         headers = {
-            "HX-Location": "/role",
+            "HX-Location": HX_LOCATION_ROLES,
             "HX-Trigger": json.dumps(
                 {
                     "showAlert": {
@@ -301,7 +339,6 @@ async def delete_role(
                 }
             ),
             "HX-Boost": "true",
-            "csrf_token": csrf_token,
         }
 
         response = HTMLResponse(content="", headers=headers)
@@ -321,4 +358,5 @@ async def delete_role(
                 "user_type": current_user.is_superuser,
             },
             e,
+            fragment=ROLE_LIST,
         )

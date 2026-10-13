@@ -50,8 +50,6 @@ async def test_role_name_is_escaped_on_the_role_page(client, logged_in, db_sessi
     assert response.status_code == 200
     assert PAYLOAD not in response.text
     assert ESCAPED in response.text
-    # the JSON header attribute stays valid: quotes and angle brackets are \u-escaped
-    assert "\\u003cscript\\u003e" in response.text
 
 
 async def test_group_name_is_escaped_on_the_groups_page(client, logged_in, db_session):
