@@ -16,15 +16,13 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- Pull requests #1 to #6 are merged (2026-10-13). `main` holds the uv setup with pinned
-  dependencies, the vendored assets, the CSS build and the whole template task: every template is
-  Flowbite 4.0.2 markup (3,592 lines down to 1,387).
+- Pull requests #1 to #8 are merged (2026-10-13). `main` holds the uv setup with pinned
+  dependencies, the vendored assets, the CSS build, the whole template task (every template is
+  Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed and the Alpine CSP build.
+  The suite has 324 tests.
 - Git identity for this repo is `Maanas Royy <m4manas@gmail.com>` (local config, there is no
   global email). The fork's commits were recreated with it on 2026-10-13, so `main` was force
   pushed once by maanas.
-- Branch `feat/hyperscript-out` removes hyperscript (pull request #7, open). Branch
-  `feat/alpine-csp` is stacked on it and swaps Alpine for its CSP build: merge #7 first, then the
-  Alpine pull request shows only its own commits. With both the suite has 324 tests.
 - Versions checked on 2026-10-13: every pinned package and vendored file is at its latest release
   (Flowbite 4.0.2, Alpine 3.17.4, htmx 2.0.11, Tailwind CLI 4.3.3, Inter 5.3.0, all direct Python
   dependencies), except sqlalchemy (held at 2.0.54 by fastapi-users-db-sqlalchemy).

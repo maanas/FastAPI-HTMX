@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-coder-guard-tests-prove-themselves
-status: proposed
+status: applied
+applied: 2026-10-13
 target: .claude/agents/coder.md
 metric: tests
 ---
