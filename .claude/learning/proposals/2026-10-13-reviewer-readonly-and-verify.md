@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-reviewer-readonly-and-verify
-status: proposed
+status: applied
+applied: 2026-10-13
 target: .claude/agents/reviewer.md
 metric: correctness
 ---

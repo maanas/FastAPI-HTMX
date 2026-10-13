@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-coder-no-env-dump
-status: proposed
+status: applied
+applied: 2026-10-13
 target: .claude/agents/coder.md
 metric: security
 ---

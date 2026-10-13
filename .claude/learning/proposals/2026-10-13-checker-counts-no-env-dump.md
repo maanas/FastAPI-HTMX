@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-checker-counts-no-env-dump
-status: proposed
+status: applied
+applied: 2026-10-13
 target: .claude/agents/checker.md
 metric: tests
 ---

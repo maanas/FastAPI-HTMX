@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-route-error-path-checklist
-status: proposed
+status: applied
+applied: 2026-10-13
 target: skills/new-page/reference/route.md
 metric: correctness
 ---

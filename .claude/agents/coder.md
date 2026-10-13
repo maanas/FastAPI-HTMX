@@ -16,6 +16,7 @@ You implement one step for the FastAPI-HTMX starter: FastAPI + SQLAlchemy (async
 - Database: a model change comes with its Alembic migration and the import in `init_models` (`app/database/base.py`). Never edit an applied migration.
 - Every write route keeps its CSRF check and its auth dependency. User input rendered as HTML goes through `nh3`.
 - No secrets, `.env` contents or credentials in code, config or logs.
+- Never run a bare `export`, `env`, `set` or `printenv`: they print every secret in the shell. Read one variable by name (`printenv NAME` is also off limits for key-like names); set variables only inline on the command you run.
 - Bug fix: before you edit, confirm the cause with data (a failing test, a log line, a curl response) and name the observation that would prove the cause wrong. Reading the code is not confirmation.
 - After two failed attempts to fix the same failure, stop and report the evidence, what you tried and the blocker.
 - You may run `uvx ruff check <files>`, `.venv/bin/python -m pytest <tests>` and a local server on 127.0.0.1 that you stop before you report. Start it in the background, keep its PID (`$!`) and `kill` that PID; never `pkill` or `killall` by name. Never ssh, never deploy, never touch a database other than the local SQLite file.
