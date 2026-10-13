@@ -1,11 +1,13 @@
 #!/bin/sh
 # Build app/static/css/app.css with the Tailwind v4 standalone CLI (no Node needed).
 # Usage: tools/css.sh [--watch]
+# CSS_OUT=<file> writes there instead of app/static/css/app.css (the stale-CSS test uses it).
 set -eu
 
 VERSION="v4.3.3"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_DIR="$ROOT/build/tailwind"
+OUT="${CSS_OUT:-$ROOT/app/static/css/app.css}"
 
 case "$(uname -s)-$(uname -m)" in
   Darwin-arm64)  ASSET="tailwindcss-macos-arm64";  SHA="cdf646702987a743464dff4d9c60fd4480d1c1e73dd819a9a67f1078815dce9d" ;;
@@ -39,6 +41,6 @@ if [ ! -x "$BIN" ]; then
 fi
 
 if [ "${1:-}" = "--watch" ]; then
-  exec "$BIN" -i "$ROOT/app/static/css/src/input.css" -o "$ROOT/app/static/css/app.css" --watch
+  exec "$BIN" -i "$ROOT/app/static/css/src/input.css" -o "$OUT" --watch
 fi
-"$BIN" -i "$ROOT/app/static/css/src/input.css" -o "$ROOT/app/static/css/app.css" --minify
+"$BIN" -i "$ROOT/app/static/css/src/input.css" -o "$OUT" --minify

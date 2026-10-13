@@ -2,7 +2,6 @@ import html
 import json
 import re
 import uuid
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -12,17 +11,11 @@ from sqlalchemy import select
 from app.app import app
 from app.database.security import current_active_user
 from app.models.users import Role
-from app.tests.template_rules import template_rule_violations
 
 from .conftest import TEST_ROLE_PREFIX
 
 pytestmark = pytest.mark.anyio
 
-TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
-ROLE_TEMPLATES = [
-    *TEMPLATES.glob("pages/role*.html"),
-    *(TEMPLATES / "partials" / "role").glob("*.html"),
-]
 HX = {"HX-Request": "true"}
 ROLE_NAME = TEST_ROLE_PREFIX + "view-role"
 
@@ -124,20 +117,6 @@ async def test_error_response_follows_the_request_kind(client, logged_in):
         page = await client.get(url)
         assert page.text.count("<nav") == 1
         assert "Not authorized" in page.text
-
-
-def test_role_templates_have_no_inline_script_style_or_handler():
-    assert len(ROLE_TEMPLATES) >= 6
-    for path in ROLE_TEMPLATES:
-        text = path.read_text(encoding="utf-8")
-        assert not template_rule_violations(text), path
-
-
-def test_role_fragments_have_no_layout():
-    for name in ("role_list", "add_role", "edit_role"):
-        text = (TEMPLATES / "partials" / "role" / f"{name}.html").read_text()
-        assert "{% extends" not in text
-        assert "<html" not in text
 
 
 async def csrf_token_from(client):

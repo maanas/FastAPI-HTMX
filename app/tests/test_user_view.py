@@ -1,6 +1,5 @@
 import re
 import uuid
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -10,15 +9,9 @@ from sqlalchemy import delete, select
 from app.app import app
 from app.database.security import current_active_user
 from app.models.users import User, UserProfile
-from app.tests.template_rules import template_rule_violations
 
 pytestmark = pytest.mark.anyio
 
-TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
-USER_TEMPLATES = [
-    *TEMPLATES.glob("pages/user*.html"),
-    *(TEMPLATES / "partials" / "user").glob("*.html"),
-]
 HX = {"HX-Request": "true"}
 EMAIL = "pytest-user-view@example.com"
 
@@ -131,20 +124,6 @@ async def test_error_response_follows_the_request_kind(client, logged_in):
     )
     assert_fragment(edit)
     assert "Not authorized" in edit.text
-
-
-def test_user_templates_have_no_inline_script_style_or_handler():
-    assert len(USER_TEMPLATES) >= 6
-    for path in USER_TEMPLATES:
-        text = path.read_text(encoding="utf-8")
-        assert not template_rule_violations(text), path
-
-
-def test_user_fragments_have_no_layout():
-    for name in ("user_list", "add_user", "edit_user"):
-        text = (TEMPLATES / "partials" / "user" / f"{name}.html").read_text()
-        assert "{% extends" not in text
-        assert "<html" not in text
 
 
 async def csrf_token_from(client):

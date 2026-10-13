@@ -9,3 +9,8 @@
 @source "../../../templates";
 @source "../../js";
 @source "../../vendor/flowbite/flowbite.min.js";
+
+/* Alpine hides an x-cloak element until it has started. */
+[x-cloak] {
+  display: none !important;
+}

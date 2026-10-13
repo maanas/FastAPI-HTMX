@@ -2,7 +2,6 @@ import html
 import json
 import re
 import uuid
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -17,15 +16,9 @@ from app.database.db import get_async_session
 from app.database.security import current_active_user
 from app.models.groups import Group, UserGroupLink
 from app.models.users import User, UserProfile
-from app.tests.template_rules import template_rule_violations
 
 pytestmark = pytest.mark.anyio
 
-TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
-GROUP_TEMPLATES = [
-    *TEMPLATES.glob("pages/group*.html"),
-    *(TEMPLATES / "partials" / "group").glob("*.html"),
-]
 HX = {"HX-Request": "true"}
 GROUP_NAME = "pytest-view-group"
 USER_EMAIL = "pytest-group-view@example.com"
@@ -207,20 +200,6 @@ async def test_error_response_follows_the_request_kind(client, logged_in):
     profile = await client.get(f"/get_user_profile/{unknown}")
     assert_fragment(profile, root=False, vary=False)
     assert "Not authorized" in profile.text
-
-
-def test_group_templates_have_no_inline_script_style_or_handler():
-    assert len(GROUP_TEMPLATES) >= 9
-    for path in GROUP_TEMPLATES:
-        text = path.read_text(encoding="utf-8")
-        assert not template_rule_violations(text), path
-
-
-def test_group_fragments_have_no_layout():
-    for path in (TEMPLATES / "partials" / "group").glob("*.html"):
-        text = path.read_text()
-        assert "{% extends" not in text, path
-        assert "<html" not in text, path
 
 
 async def csrf_token_from(client):

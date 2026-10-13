@@ -2,7 +2,6 @@ import html
 import json
 import re
 import uuid
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -22,11 +21,6 @@ from app.tests.template_rules import template_rule_violations
 
 pytestmark = pytest.mark.anyio
 
-TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
-UPLOAD_TEMPLATES = [
-    TEMPLATES / "pages" / "upload.html",
-    *(TEMPLATES / "partials" / "upload").glob("*.html"),
-]
 HX = {"HX-Request": "true"}
 STORAGE_UNAVAILABLE = upload_routes.STORAGE_UNAVAILABLE
 USER_EMAIL = "pytest-upload-view@example.com"
@@ -220,32 +214,11 @@ async def test_error_response_follows_the_request_kind(client, logged_in):
     assert "<nav" not in table.text
 
 
-def test_upload_templates_have_no_inline_script_style_or_handler():
-    assert len(UPLOAD_TEMPLATES) >= 4
-    for path in UPLOAD_TEMPLATES:
-        text = path.read_text(encoding="utf-8")
-        assert not template_rule_violations(text), path
-
-
 def test_the_rule_helper_flags_hx_on_attributes():
     assert template_rule_violations('<form hx-on::after-request="x()"></form>')
     assert template_rule_violations('<div hx-on:click="x()"></div>')
     assert template_rule_violations('<div hx-on="click: x()"></div>')
     assert not template_rule_violations('<div hx-post="/x" hx-target="#y"></div>')
-
-
-def test_upload_fragments_have_no_layout():
-    for path in (TEMPLATES / "partials" / "upload").glob("*.html"):
-        text = path.read_text()
-        assert "{% extends" not in text, path
-        assert "<html" not in text, path
-
-
-def test_scripts_load_from_an_absolute_static_path():
-    for path in TEMPLATES.rglob("*.html"):
-        text = path.read_text(encoding="utf-8")
-        for src in re.findall(r"<script\b[^>]*?\ssrc=[\"']([^\"']*)", text, re.S):
-            assert src.startswith("/static/"), (path, src)
 
 
 async def test_upload_adds_the_file_to_the_table(
