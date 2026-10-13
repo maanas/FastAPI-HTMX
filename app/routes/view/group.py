@@ -16,12 +16,24 @@ from app.models.users import Role as UserRoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
 from app.routes.view.errors import handle_error
+from app.routes.view.fragments import render_view
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.group import GroupCreate
 from app.schema.group import GroupUserLink as GroupUserLinkCreate
 from app.templates import templates
 
 group_view_route = APIRouter()
+
+# Fragments (no layout) and the pages that include them, see fragments.py
+GROUP_LIST = "partials/group/groups.html"
+GROUP_ADD = "partials/group/add_group.html"
+GROUP_EDIT = "partials/group/edit_group.html"
+GROUP_USERS = "partials/group/add_group_user.html"
+GROUP_USER_PROFILE = "partials/group/group_user_profile.html"
+# Navigation that replaces the content area, as the sidebar link does
+HX_LOCATION_GROUPS = json.dumps(
+    {"path": "/groups", "target": "#dashboard-body", "swap": "outerHTML"}
+)
 
 
 group_crud = SQLAlchemyCRUD[GroupModelDB](
@@ -53,9 +65,10 @@ async def get_groups(
 
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
-        response = templates.TemplateResponse(
+        response = render_view(
             request,
             "pages/groups.html",
+            GROUP_LIST,
             {
                 "request": request,
                 "groups": groups,
@@ -74,12 +87,16 @@ async def get_groups(
             {
                 "request": request,
                 "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
             },
             e,
+            fragment=GROUP_LIST,
         )
 
 
 # Defining a route to get the user profile based on id
+# Its fragment fills one table cell, not the whole content area, so every
+# request gets the fragment and there is no page for it
 @group_view_route.get("/get_user_profile/{user_id}", response_class=HTMLResponse)
 async def get_user_profile(
     request: Request,
@@ -87,20 +104,31 @@ async def get_user_profile(
     db: CurrentAsyncSession,
     current_user: UserModelDB = Depends(current_active_user),
 ):
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to add groups")
-    user_profile = await user_crud.read_by_primary_key(
-        db, user_id, join_relationships=True
-    )
-    return templates.TemplateResponse(
-        request,
-        "partials/group/group_user_profile.html",
-        {
-            "request": request,
-            "user_profile": user_profile,
-            "user_type": current_user.is_superuser,
-        },
-    )
+    try:
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="Not authorized to add groups")
+        user_profile = await user_crud.read_by_primary_key(
+            db, user_id, join_relationships=True
+        )
+        return templates.TemplateResponse(
+            request,
+            GROUP_USER_PROFILE,
+            {
+                "request": request,
+                "user_profile": user_profile,
+                "user_type": current_user.is_superuser,
+            },
+        )
+    except Exception as e:
+        # No page for this fragment: handle_error renders its template as given
+        return handle_error(
+            GROUP_USER_PROFILE,
+            {
+                "request": request,
+                "user_type": current_user.is_superuser,
+            },
+            e,
+        )
 
 
 # Defining a route to add a new group to the database
@@ -109,23 +137,34 @@ async def get_create_group(
     request: Request,
     current_user: UserModelDB = Depends(current_active_user),
 ):
-    # checking the current user as super user
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to add groups")
-    # Redirecting to the add group page upon successful group creation
-    csrf_token = request.headers.get("X-CSRF-Token")
+    try:
+        # checking the current user as super user
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="Not authorized to add groups")
+        csrf_token = request.headers.get("X-CSRF-Token")
 
-    response = templates.TemplateResponse(
-        request,
-        "partials/group/add_group.html",
-        {
-            "request": request,
-            "user_type": current_user.is_superuser,
-            "csrf_token": csrf_token,
-        },
-    )
-
-    return response
+        return render_view(
+            request,
+            "pages/group_add.html",
+            GROUP_ADD,
+            {
+                "request": request,
+                "user_type": current_user.is_superuser,
+                "csrf_token": csrf_token,
+            },
+        )
+    except Exception as e:
+        csrf_token = request.headers.get("X-CSRF-Token")
+        return handle_error(
+            "pages/group_add.html",
+            {
+                "request": request,
+                "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
+            },
+            e,
+            fragment=GROUP_ADD,
+        )
 
 
 # Route to get the group by ID
@@ -136,23 +175,48 @@ async def get_group_by_id(
     db: CurrentAsyncSession,
     current_user: UserModelDB = Depends(current_active_user),
 ):
-    # checking the current user as super user
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to add groups")
-    group = await group_crud.read_by_primary_key(db, group_id)
+    group = None
+    try:
+        # checking the current user as super user
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="Not authorized to add groups")
+        group = await group_crud.read_by_primary_key(db, group_id)
 
-    csrf_token = request.headers.get("X-CSRF-Token")
+        csrf_token = request.headers.get("X-CSRF-Token")
 
-    return templates.TemplateResponse(
-        request,
-        "partials/group/edit_group.html",
-        {
-            "request": request,
-            "group": group,
-            "user_type": current_user.is_superuser,
-            "csrf_token": csrf_token,
-        },
-    )
+        return render_view(
+            request,
+            "pages/group_edit.html",
+            GROUP_EDIT,
+            {
+                "request": request,
+                "group": group,
+                "user_type": current_user.is_superuser,
+                "csrf_token": csrf_token,
+            },
+        )
+    except Exception as e:
+        csrf_token = request.headers.get("X-CSRF-Token")
+        return handle_error(
+            "pages/group_edit.html",
+            {
+                "request": request,
+                "group": group,
+                "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
+            },
+            e,
+            fragment=GROUP_EDIT,
+        )
+
+
+def name_is_taken(existing, group_id: uuid.UUID | None = None) -> bool:
+    """True if `read_by_column` found a group other than `group_id`.
+
+    It returns None, one group or a list when names differ only in case.
+    """
+    found = existing if isinstance(existing, list) else [existing]
+    return any(group and group.id != group_id for group in found)
 
 
 @group_view_route.post("/post_create_group", response_class=HTMLResponse)
@@ -163,13 +227,13 @@ async def post_create_group(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
-    await csrf_protect.validate_csrf(request)
-
-    # checking the current user as super user
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to add groups")
-
     try:
+        await csrf_protect.validate_csrf(request)
+
+        # checking the current user as super user
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="Not authorized to add groups")
+
         form = await request.form()
 
         # Iterate over the form fields and sanitize the values before validating against the Pydantic model
@@ -182,15 +246,15 @@ async def post_create_group(
             db, "group_name", group_create.group_name
         )
 
-        if existing_group:
+        if name_is_taken(existing_group):
             raise HTTPException(status_code=400, detail="Group name already exists")
         await group_crud.create(dict(group_create), db)
 
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
-        # Redirecting to the add group page upon successful group creation
+        # Redirecting to the groups page upon successful group creation
         headers = {
-            "HX-Location": "/groups",
+            "HX-Location": HX_LOCATION_GROUPS,
             "HX-Trigger": json.dumps(
                 {
                     "showAlert": {
@@ -216,13 +280,14 @@ async def post_create_group(
     except Exception as e:
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/group/add_group.html",
+            "pages/group_add.html",
             {
                 "request": request,
                 "csrf_token": csrf_token,
                 "user_type": current_user.is_superuser,
             },
             e,
+            fragment=GROUP_ADD,
         )
 
 
@@ -236,12 +301,14 @@ async def post_update_group(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
-
+    group = None
     try:
         await csrf_protect.validate_csrf(request)
         # checking the current user as super user
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add groups")
+        # Kept for the error response, which shows the form again
+        group = await group_crud.read_by_primary_key(db, group_id)
 
         form = await request.form()
 
@@ -251,13 +318,21 @@ async def post_update_group(
             group_desc=nh3.clean(str(form.get("group_desc"))),
         )
 
+        # Reject a name another group has: a unique violation would leave the
+        # session unusable for the error response
+        existing_group = await group_crud.read_by_column(
+            db, "group_name", group_update.group_name
+        )
+        if name_is_taken(existing_group, group_id):
+            raise HTTPException(status_code=400, detail="Group name already exists")
+
         await group_crud.update(db, group_id, dict(group_update))
 
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
-        # Redirecting to the add group page upon successful group creation
+        # Redirecting to the groups page upon successful group update
         headers = {
-            "HX-Location": "/groups",
+            "HX-Location": HX_LOCATION_GROUPS,
             "HX-Trigger": json.dumps(
                 {
                     "showAlert": {
@@ -277,10 +352,9 @@ async def post_update_group(
 
         return response
     except Exception as e:
-        group = await group_crud.read_by_primary_key(db, group_id)
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/group/edit_group.html",
+            "pages/group_edit.html",
             {
                 "request": request,
                 "group": group,
@@ -288,6 +362,7 @@ async def post_update_group(
                 "user_type": current_user.is_superuser,
             },
             e,
+            fragment=GROUP_EDIT,
         )
 
 
@@ -300,22 +375,21 @@ async def delete_group(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
-
     try:
         await csrf_protect.validate_csrf(request)
-
-        # htmx 2 sends DELETE values (hx-vals) in the query string, not in a body
-        group_name = request.query_params["group_name"]
 
         # checking the current user as super user
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add groups")
+        # The name for the alert comes from the row, not from the client
+        group_to_delete = await group_crud.read_by_primary_key(db, group_id)
+        group_name = group_to_delete.group_name
         await group_crud.delete(db, group_id)
 
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
         headers = {
-            "HX-Location": "/groups",
+            "HX-Location": HX_LOCATION_GROUPS,
             "HX-Trigger": json.dumps(
                 {
                     "showAlert": {
@@ -325,7 +399,6 @@ async def delete_group(
                     }
                 }
             ),
-            "csrf_token": csrf_token,
         }
         response = HTMLResponse(content="", headers=headers)
 
@@ -341,14 +414,28 @@ async def delete_group(
             {
                 "request": request,
                 "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
             },
             e,
+            fragment=GROUP_LIST,
         )
 
 
 """
 # Group Users Allocation Routes
 """
+
+
+async def read_allocation(db: CurrentAsyncSession, group_id: uuid.UUID):
+    """The group, all users and the ids of the users already in the group."""
+    group = await group_crud.read_by_primary_key(db, group_id)
+    users = await user_crud.read_all(db, join_relationships=True)
+    linked = await db.execute(
+        select(UserGroupLinkModelDB.user_id).where(
+            UserGroupLinkModelDB.group_id == group_id
+        )
+    )
+    return group, users, list(linked.scalars().all())
 
 
 # Defining a route getting the page for allocating users to the selected group
@@ -359,31 +446,40 @@ async def get_group_users(
     db: CurrentAsyncSession,
     current_user: UserModelDB = Depends(current_active_user),
 ):
-    # checking the current user as super user
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to add groups")
-    group = await group_crud.read_by_primary_key(db, group_id)
-    users = await user_crud.read_all(db, join_relationships=True)
-    group_users = await db.execute(
-        select(UserGroupLinkModelDB).where(UserGroupLinkModelDB.group_id == group_id)
-    )
-    group_users = group_users.unique().scalars().all()
-    await db.close()
-    group_user_ids = [user.user_id for user in group_users]
+    group = None
+    try:
+        # checking the current user as super user
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="Not authorized to add groups")
+        group, users, group_user_ids = await read_allocation(db, group_id)
 
-    csrf_token = request.headers.get("X-CSRF-Token")
-    return templates.TemplateResponse(
-        request,
-        "partials/group/add_group_user.html",
-        {
-            "request": request,
-            "group": group,
-            "users": users,
-            "group_user_ids": group_user_ids,
-            "csrf_token": csrf_token,
-            "user_type": current_user.is_superuser,
-        },
-    )
+        csrf_token = request.headers.get("X-CSRF-Token")
+        return render_view(
+            request,
+            "pages/group_users.html",
+            GROUP_USERS,
+            {
+                "request": request,
+                "group": group,
+                "users": users,
+                "group_user_ids": group_user_ids,
+                "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
+            },
+        )
+    except Exception as e:
+        csrf_token = request.headers.get("X-CSRF-Token")
+        return handle_error(
+            "pages/group_users.html",
+            {
+                "request": request,
+                "group": group,
+                "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
+            },
+            e,
+            fragment=GROUP_USERS,
+        )
 
 
 # Update the UserGroupLink model based on selected user for a group
@@ -396,21 +492,33 @@ async def post_group_user_link(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
-
+    checked = False
     try:
         await csrf_protect.validate_csrf(request)
         # checking the current user as super user
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add groups")
+        checked = True
+        group, users, group_user_ids = await read_allocation(db, group_id)
         form = await request.form()
 
         all_users = set(form.getlist("all_users"))
-        selected_users = set(form.getlist("users_selected"))
+        # A user ticked twice must not be linked twice
+        selected_list = list(dict.fromkeys(form.getlist("users_selected")))
+        selected_users = set(selected_list)
+
+        # Refuse an id that is no user before anything is written
+        submitted = {uuid.UUID(str(user_id)) for user_id in all_users | selected_users}
+        known = await db.execute(
+            select(UserModelDB.id).where(UserModelDB.id.in_(submitted))
+        )
+        if submitted - set(known.scalars().all()):
+            raise HTTPException(status_code=400, detail="Unknown user selected")
 
         # Removing the users already selected from the list of all users
         non_selected_users = all_users - selected_users
         db_data = []
-        for user_id in form.getlist("users_selected"):
+        for user_id in selected_list:
             group_user_link = GroupUserLinkCreate(
                 group_id=uuid.UUID(nh3.clean(str(group_id))),
                 user_id=uuid.UUID(nh3.clean(str(user_id))),
@@ -451,7 +559,7 @@ async def post_group_user_link(
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
         headers = {
-            "HX-Location": "/groups",
+            "HX-Location": HX_LOCATION_GROUPS,
             "HX-Trigger": json.dumps(
                 {
                     "showAlert": {
@@ -472,14 +580,27 @@ async def post_group_user_link(
 
         return response
     except Exception as e:
-        group = await group_crud.read_by_primary_key(db, group_id)
+        # A failed write leaves the session unusable: start over and read the
+        # form again; if that fails too, the response is the error alone.
+        # Nothing is read for a request that failed the CSRF or superuser check.
+        group, users, group_user_ids = None, [], []
+        if checked:
+            try:
+                await db.rollback()
+                group, users, group_user_ids = await read_allocation(db, group_id)
+            except Exception:
+                pass
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/group/add_group_user.html",
+            "pages/group_users.html",
             {
                 "request": request,
                 "group": group,
+                "users": users,
+                "group_user_ids": group_user_ids,
                 "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
             },
             e,
+            fragment=GROUP_USERS,
         )

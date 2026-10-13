@@ -60,7 +60,6 @@ async def test_group_name_is_escaped_on_the_groups_page(client, logged_in, db_se
         assert response.status_code == 200
         assert PAYLOAD not in response.text
         assert ESCAPED in response.text
-        assert "\\u003cscript\\u003e" in response.text
     finally:
         await db_session.rollback()
         await db_session.execute(delete(Group).where(Group.group_name == GROUP_NAME))

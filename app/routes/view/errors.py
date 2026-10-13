@@ -30,7 +30,8 @@ def handle_error(
     Returns:
         A FastAPI response containing the rendered template with the error messages.
     """
-    logger.info(f"context: {context}, error: {error}")
+    # Key names only: the values hold user emails and the CSRF token
+    logger.info(f"context keys: {sorted(context)}, error: {error}")
     error_messages: list[str] = []
     if isinstance(error, ValidationError):
         if error.errors():
