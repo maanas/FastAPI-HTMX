@@ -272,3 +272,28 @@ def test_csp_check_accepts_single_expressions(attr):
 
 def test_csp_check_ignores_non_alpine_attributes():
     assert alpine_csp_problems("data-x", "a => b") == []
+
+
+EVAL_FEATURES = (
+    '<div hx-on:click="go()"></div>',
+    '<div hx-on::after-request="go()"></div>',
+    "<div hx-vals='js:{a: 1}'></div>",
+    "<div hx-vals='javascript:{a: 1}'></div>",
+    "<div hx-headers='js:{a: 1}'></div>",
+    "<input hx-trigger=\"keyup[key=='Enter']\">",
+)
+EVAL_FREE = (
+    '<div hx-trigger="revealed" hx-vals=\'{"a": "js:x"}\'></div>',
+    '<div hx-headers=\'{"X-CSRF-Token": "{{ t }}"}\' hx-trigger="keyup changed"></div>',
+    '<p title="hx-on and js: are only words here">hx-vals js:</p>',
+)
+
+
+@pytest.mark.parametrize("html", EVAL_FEATURES)
+def test_eval_guard_flags_each_feature_allow_eval_false_disables(html):
+    assert template_rule_violations(html)
+
+
+@pytest.mark.parametrize("html", EVAL_FREE)
+def test_eval_guard_leaves_eval_free_markup_alone(html):
+    assert not template_rule_violations(html)

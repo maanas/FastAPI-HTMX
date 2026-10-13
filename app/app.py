@@ -1,10 +1,17 @@
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi_csrf_protect.exceptions import CsrfProtectError
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from app.database.db import User, create_db_and_tables
-from app.database.security import auth_backend, current_active_user, fastapi_users
-from app.exception import http_exception_handler
+from app.database.db import User
+from app.database.security import (
+    auth_backend,
+    current_active_user,
+    fastapi_users,
+    refuse_self_delete,
+    require_csrf,
+)
+from app.exception import csrf_error_handler, http_exception_handler
 from app.routes.view.group import group_view_route
 
 # importing the route
@@ -16,35 +23,60 @@ from app.schema.users import UserCreate, UserRead, UserUpdate
 
 from fastapi_csrf_protect import CsrfProtect
 
-from app.core.csrf_settings import CsrfSettings
+from app.core.csrf_settings import CsrfSettings, crsf_settings
+from app.core.security_headers import SecurityHeadersMiddleware
 
-app = FastAPI(exception_handlers={HTTPException: http_exception_handler})
+# The API docs pages load Swagger UI from a CDN with an inline script: both are
+# refused by the content security policy and the no-CDN rule, so they are off
+app = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+    exception_handlers={
+        HTTPException: http_exception_handler,
+        CsrfProtectError: csrf_error_handler,
+    }
+)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# HSTS only when the site is served over HTTPS (COOKIE_SECURE)
+app.add_middleware(SecurityHeadersMiddleware, hsts=crsf_settings.cookie_secure)
 
+
+# Every POST of the fastapi-users routers needs the CSRF pair (login included,
+# logout exempt, see require_csrf), checked before the body is read
+csrf_guard = [Depends(require_csrf)]
 
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+    fastapi_users.get_auth_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+    dependencies=csrf_guard,
 )
 
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["auth"],
+    dependencies=csrf_guard,
 )
 app.include_router(
     fastapi_users.get_reset_password_router(),
     prefix="/auth",
     tags=["auth"],
+    dependencies=csrf_guard,
 )
 app.include_router(
     fastapi_users.get_verify_router(UserRead),
     prefix="/auth",
     tags=["auth"],
+    dependencies=csrf_guard,
 )
+# PATCH and DELETE need the pair too; a superuser cannot delete themselves here
 app.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
     tags=["users"],
+    dependencies=[Depends(require_csrf), Depends(refuse_self_delete)],
 )
 
 
@@ -63,9 +95,6 @@ async def authenticated_route(user: User = Depends(current_active_user)):
 
 @app.on_event("startup")
 async def on_startup():
-    # Not needed if you setup a migration system like Alembic
-    await create_db_and_tables()
-    # await create_superuser()
     logger.info("Application started")
 
 

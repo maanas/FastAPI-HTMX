@@ -23,6 +23,7 @@ You implement one step for the FastAPI-HTMX starter: FastAPI + SQLAlchemy (async
 - Load the project skill the step touches before you write: `flowbite` for any markup, `htmx-patterns` for any `hx-*` attribute or HTMX route, `new-page` for a new screen.
 - Load a pattern skill (fastapi-patterns, python-patterns, python-testing, error-handling, database-migrations, accessibility, security-review) only when the step needs it.
 - Do not commit or push.
+- A test or guard that scans templates must be shown to work: give it one case it must flag (every attribute form the rule names) and one it must not (the word inside a string literal), and run it once with the change removed. Put a one-off assertion outside a parametrized test.
 
 Before you report, read your own `git diff` once: every new branch has a caller that needs it, and a changed shared piece (`app/templates/base/`, `app/routes/view/view_crud.py`, `app/schema/pydantic_base.py`) is still correct for every page that uses it.
 

@@ -3,7 +3,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.routing import APIRouter
 from fastapi_csrf_protect import CsrfProtect
 
-from app.database.security import current_active_user, verify_jwt
+from app.database.security import (
+    UserManager,
+    current_active_user,
+    get_user_manager,
+    verify_jwt,
+)
 from app.models.users import User as UserModelDB
 from app.templates import templates
 
@@ -40,11 +45,13 @@ async def get_dashboard(
 
 
 @login_view_route.get("/")
-async def get_index(request: Request, csrf_protect: CsrfProtect = Depends()):
+async def get_index(
+    request: Request, user_manager: UserManager = Depends(get_user_manager)
+):
     cookies = request.cookies
     cookie_value = cookies.get("fastapiusersauth")
     if cookie_value is not None:
-        if await verify_jwt(cookie_value):
+        if await verify_jwt(cookie_value, user_manager):
             return RedirectResponse("/dashboard", status_code=302)
         else:
             return RedirectResponse("/login", status_code=302)
@@ -85,10 +92,15 @@ async def get_login(
 )
 async def get_register(
     request: Request,
+    csrf_protect: CsrfProtect = Depends(),
 ):
     current_page = request.url.path.split("/")[-1]
+    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
     context = {
         "request": request,
         "current_page": current_page,
+        "csrf_token": csrf_token,
     }
-    return templates.TemplateResponse(request, "pages/register.html", context)
+    response = templates.TemplateResponse(request, "pages/register.html", context)
+    csrf_protect.set_csrf_cookie(signed_token, response)
+    return response

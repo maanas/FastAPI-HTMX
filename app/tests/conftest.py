@@ -1,7 +1,14 @@
+import os
+
 import pytest
 from sqlalchemy import delete
 
-from app.database.base import Base, async_session_maker, engine, init_models
+# Test-only signing key, set before the app is imported (env beats .env).
+os.environ.setdefault(
+    "AUTH_SECRET", "pytest-only-auth-secret-not-for-use-0123456789abcdef"
+)
+
+from app.database.base import Base, async_session_maker, engine, init_models  # noqa: E402
 
 TEST_ROLE_PREFIX = "pytest-"
 

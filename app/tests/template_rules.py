@@ -11,6 +11,9 @@ CSP_FORBIDDEN = (
     (re.compile(r"\{\{"), "Jinja"),
 )
 RAW_PATTERNS = (CSP_FORBIDDEN[1][0], CSP_FORBIDDEN[4][0])
+# htmx features that need eval and stop working under allowEval=false
+JS_VALUE = re.compile(r"^\s*(?:js|javascript):", re.I)
+JINJA_TAG = re.compile(r"\{\{.*?\}\}|\{%.*?%\}", re.S)
 OPENERS = {"(": ")", "{": "}", "[": "]"}
 
 
@@ -91,7 +94,14 @@ class _RuleScanner(HTMLParser):
             elif name.startswith("hx-on"):
                 self.problems.append(f"line {line}: <{tag}> has htmx handler {name}")
         for name, value in attrs:
-            for problem in alpine_csp_problems(name.lower(), value or ""):
+            name, value = name.lower(), value or ""
+            if name in ("hx-vals", "hx-headers") and JS_VALUE.match(value):
+                self.problems.append(f"line {line}: <{tag}> {name} evaluates js:")
+            if name == "hx-trigger" and "[" in JINJA_TAG.sub("", value):
+                self.problems.append(
+                    f"line {line}: <{tag}> hx-trigger has an event filter"
+                )
+            for problem in alpine_csp_problems(name, value):
                 self.problems.append(f"line {line}: <{tag}> {problem}")
 
     handle_startendtag = handle_starttag

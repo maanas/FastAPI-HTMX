@@ -1,9 +1,7 @@
-import os
 import uuid
 from typing import Optional
 
-from dotenv import load_dotenv
-from fastapi import Depends, Request, Response
+from fastapi import Depends, HTTPException, Request, Response
 from fastapi_csrf_protect import CsrfProtect
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin
 from fastapi_users.authentication import (
@@ -12,18 +10,13 @@ from fastapi_users.authentication import (
     JWTStrategy,
 )
 from fastapi_users.db import SQLAlchemyUserDatabase
-from fastapi_users.jwt import decode_jwt
-from jwt.exceptions import InvalidTokenError
 from loguru import logger
 
+from app.core.auth_settings import get_auth_secret
+from app.core.csrf_settings import CsrfSettings, crsf_settings
 from app.database.db import User, get_user_db
 
-SECRET: str = os.getenv("AUTH_SECRET", "my_default_secret_key")
-
-logger.critical(
-    "The SECRET key is being logged! Remove this before deploying to production."
-)
-logger.critical(SECRET)
+SECRET: str = get_auth_secret()
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -31,17 +24,17 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     verification_token_secret = SECRET
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
-        print(f"User {user.id} has registered.")
+        logger.info(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        print(f"User {user.id} has forgot their password. Reset token: {token}")
+        logger.info(f"User {user.id} requested a password reset.")
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        print(f"Verification requested for user {user.id}. Verification token: {token}")
+        logger.info(f"Verification requested for user {user.id}.")
 
     async def on_after_login(
         self,
@@ -49,33 +42,24 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         request: Optional[Request] = None,
         response: Optional[Response] = None,
     ):
-        csrf_protect = CsrfProtect()
-        await csrf_protect.validate_csrf(request)
-        print(f"User {user.id} logged in.")
-
-    # Decoding the JWT token using the inheritance of the BaseUserManager
-    async def on_decode_jwt(self, jwt_token: str):
-        """
-        Decodes a JWT token using the verification token secret and audience.
-
-        Args:
-            jwt_token (str): The JWT token to decode.
-
-        Returns:
-            dict: The decoded JWT token.
-        """
-        return decode_jwt(
-            jwt_token,
-            self.verification_token_secret,
-            [self.verification_token_audience],
-        )
+        logger.info(f"User {user.id} logged in.")
 
 
 async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
     yield UserManager(user_db)
 
 
-cookie_transport = CookieTransport(cookie_max_age=3600)
+def build_cookie_transport(settings: CsrfSettings) -> CookieTransport:
+    """The login cookie: HttpOnly, with Secure and SameSite from the CSRF settings."""
+    return CookieTransport(
+        cookie_max_age=3600,
+        cookie_secure=settings.cookie_secure,
+        cookie_httponly=True,
+        cookie_samesite=settings.cookie_samesite,
+    )
+
+
+cookie_transport = build_cookie_transport(crsf_settings)
 
 
 def get_jwt_strategy() -> JWTStrategy:
@@ -89,33 +73,50 @@ auth_backend = AuthenticationBackend(
 )
 
 
-async def verify_jwt(
-    jwt_token: str, user_db: SQLAlchemyUserDatabase = Depends(get_user_db)
-) -> bool:
-    """
-    Verifies the given JWT token by decoding it and checking its validity.
+async def verify_jwt(jwt_token: str, user_manager: UserManager) -> bool:
+    """True if the login cookie value is a valid token of an active user.
 
-    Args:
-        jwt_token (str): The JWT token to be verified.
-        user_db (SQLAlchemyUserDatabase, optional): The user database to use for verification.
-                                                    Defaults to Depends(get_user_db).
-
-    Returns:
-        bool: True if the token is valid, False otherwise.
+    The check is the one the auth backend makes: same secret, audience, expiry.
     """
-    isTokenValid: bool = False
-    payload = None
-    try:
-        async for user_manager in get_user_manager(user_db=user_db):
-            payload = user_manager.on_decode_jwt(jwt_token)
-            # Add your verification logic here
-    except InvalidTokenError:
-        logger.debug(payload)
-    if payload:
-        isTokenValid = True
-    return isTokenValid
+    user = await get_jwt_strategy().read_token(jwt_token, user_manager)
+    return user is not None and user.is_active
 
 
 fastapi_users = FastAPIUsers[User, uuid.UUID](get_user_manager, [auth_backend])
 
 current_active_user = fastapi_users.current_user(active=True)
+
+
+# The name fastapi-users gives the logout route of the "jwt" backend
+LOGOUT_ROUTE_NAME = "auth:jwt.logout"
+
+
+async def require_csrf(request: Request, csrf_protect: CsrfProtect = Depends()) -> None:
+    """Router dependency: an unsafe request needs a valid CSRF header and cookie pair.
+
+    A failure raises CsrfProtectError, which the app answers with a fixed 403.
+    """
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    # Log out is exempt: the shell posts it without a token (shell pages carry
+    # none), and a forged log out costs the user one login. Login stays checked.
+    route = request.scope.get("route")
+    if getattr(route, "name", None) == LOGOUT_ROUTE_NAME:
+        return
+    await csrf_protect.validate_csrf(request)
+
+
+async def refuse_self_delete(
+    request: Request, user: User = Depends(current_active_user)
+) -> None:
+    """Router dependency for /users: DELETE /users/{id} never deletes the caller."""
+    if request.method != "DELETE":
+        return
+    try:
+        target = uuid.UUID(str(request.path_params.get("id")))
+    except ValueError:
+        return  # the library answers 422 for it
+    if target == user.id:
+        raise HTTPException(
+            status_code=400, detail="You cannot delete your own account"
+        )

@@ -37,10 +37,13 @@ function Install-Dependencies {
 function Create-EnvFile {
     Write-Host "Creating .env file..." -ForegroundColor Blue
     if (-not (Test-Path ".env")) {
+        $secretBytes = New-Object byte[] 48
+        [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($secretBytes)
+        $authSecret = [Convert]::ToBase64String($secretBytes)
         $envContent = @"
 # Database Configuration
 DATABASE_URL="sqlite+aiosqlite:///./users.db"
-AUTH_SECRET="super-secret-key-example-123456789"
+AUTH_SECRET="$authSecret"
 
 # MinIO Configuration (Required for file uploads)
 MINIO_URL="http://localhost:9000"
@@ -166,9 +169,7 @@ function Start-DevApp {
 }
 
 function Show-Credentials {
-    Write-Host "Admin Login Credentials" -ForegroundColor Blue
-    Write-Host "Email: superuser@admin.com" -ForegroundColor Green
-    Write-Host "Password: password123" -ForegroundColor Green
+    Write-Host "Admin user: python -m app.commands.create_superuser" -ForegroundColor Green
     Write-Host "URL: http://127.0.0.1:8080" -ForegroundColor Blue
 }
 

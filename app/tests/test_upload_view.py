@@ -12,6 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.app import app
+from app.core.security_headers import SECURITY_HEADERS
 from app.database.db import get_async_session
 from app.database.security import current_active_user
 from app.models.upload import Upload
@@ -551,6 +552,17 @@ async def test_user_a_cannot_delete_or_download_user_bs_file(
     assert "File not found" in unknown.text
     assert fake_minio.objects == {name: b"secret"}
     assert await stored_names(db_session, other_user.id) == [FILE_NAME]
+
+
+async def test_the_streamed_download_has_the_security_headers(
+    client, logged_in, db_session, stored_user, fake_minio
+):
+    row = await make_file(db_session, stored_user)
+    fake_minio.objects[row.unique_name] = b"mine"
+    downloaded = await client.get(f"/download/{row.unique_name}")
+    assert downloaded.content == b"mine"
+    for name, value in SECURITY_HEADERS.items():
+        assert downloaded.headers[name] == value
 
 
 async def test_user_a_can_download_and_delete_their_own_file(

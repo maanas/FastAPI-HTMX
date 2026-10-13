@@ -10,8 +10,11 @@ document.addEventListener("alpine:init", () => {
     password: "",
     repeatPassword: "",
     emailPattern: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+    csrfToken: "",
     passwordPattern: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/,
     init() {
+      // The token comes from the server in data-csrf-token on the component root
+      this.csrfToken = this.$el.dataset.csrfToken || "";
       this.$watch("username", () => this.checkUsername());
       this.$watch("password", () => this.validatePassword());
       this.$watch("message", () => this.checkServerError());
@@ -86,6 +89,7 @@ document.addEventListener("alpine:init", () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-CSRF-Token": this.csrfToken,
           },
           body: JSON.stringify(formData),
         });

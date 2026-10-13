@@ -33,6 +33,7 @@ uv sync                                   # .venv from uv.lock
 cp .env.example .env                      # then edit it (see README)
 .venv/bin/alembic upgrade head            # create or update the database
 .venv/bin/python main.py                  # http://127.0.0.1:8080
+.venv/bin/python -m app.commands.create_superuser   # create or promote a superuser
 .venv/bin/python -m pytest -q app/tests   # run after alembic upgrade head
 uvx ruff check <files>
 tools/css.sh [--watch]                    # rebuild app/static/css/app.css (Tailwind, no Node)
