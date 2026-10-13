@@ -68,6 +68,7 @@ async def get_users(
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
         response = templates.TemplateResponse(
+            request,
             "pages/user.html",
             {
                 "request": request,
@@ -120,6 +121,7 @@ async def get_create_users(
             raise HTTPException(status_code=403, detail="Not authorized to add users")
         # Redirecting to the add role page upon successful role creation
         return templates.TemplateResponse(
+            request,
             "partials/user/add_user.html",
             {"request": request},
         )
@@ -149,6 +151,7 @@ async def get_user_by_id(
         csrf_token = request.headers.get("X-CSRF-Token")
 
         return templates.TemplateResponse(
+            request,
             "partials/user/edit_user.html",
             {
                 "request": request,

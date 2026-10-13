@@ -16,25 +16,23 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- `main` equals upstream (4d8969e). Branch `chore/starter-setup` is pull request #1
-  (https://github.com/maanas/FastAPI-HTMX/pull/1, open, waiting for maanas to merge). It adds
-  `theme/flowbite` (submodule, Flowbite v4.0.2: component markup in `content/components/*.md`,
-  theme variables in `src/themes/`, app shell in `layouts/dashboard.html`; reference only, nothing
-  loads from it at runtime) and this file.
-- Also on the branch (2026-10-13): `.vscode/` removed; `CLAUDE.md`; `.claude/` with the ECC
-  skills (`~/bin/ecc.sh`), the dev team adapted from the spider repo (`coder`, `reviewer`,
-  `checker`, `committer`, `retro`, the `commit` and `learning-report` skills) and its two hooks, and
-  four skills written for this repo: `flowbite` (component lookup in the submodule), `htmx-patterns`,
-  `new-page` (these three in `skills/`, linked into `.claude/skills/`) and `pull-request`. There is
-  no official Flowbite or htmx skill (checked 2026-10-13): Themesberg ships an MCP server (`npx flowbite-mcp`, needs Node) that covers
-  what the submodule already holds; the htmx skills are third-party.
-- The app was run once on 2026-10-13 in a scratch copy (uv, Python 3.12, SQLite). It starts and
-  serves `/login`, `/register` and `/docs` after the fixes marked "found in the run" below. Login
-  in a browser was not tried.
-- The agents and the project skills have not been used on a real task yet: expect the first task
-  to show what to fix in them (retro proposes, the owner approves).
-- Next: merge pull request #1, then in a new session start the first open item below on a new
-  branch from `main`.
+- Pull request #1 is merged (2026-10-13): `main` holds the Flowbite submodule, `CLAUDE.md`, the dev
+  team in `.claude/` and the project skills.
+- Git identity for this repo is `Maanas Royy <m4manas@gmail.com>` (local config, there is no
+  global email). The fork's commits were recreated with it on 2026-10-13, so `main` was force
+  pushed once by maanas.
+- Branch `fix/clean-clone-start` is pull request #2 (2026-10-13,
+  https://github.com/maanas/FastAPI-HTMX/pull/2, waiting for maanas): the
+  starter installs with `uv sync`, builds its database with `alembic upgrade head`, starts, and
+  passes `pytest -q app/tests` (15 tests). Every direct dependency is at its latest release and
+  pinned with `==`. Login, registration and the authenticated pages were exercised in-process
+  (TestClient) on the upgraded stack, not in a browser.
+- Workers get their settings as environment variables, never a `.env` file: the ten names are in
+  `.env.example`.
+- Two retro proposals wait for the owner in `.claude/learning/proposals/` (checker: no `ls` of
+  `.env`, no `timeout`; coder: stop a server by PID, never `pkill` by name).
+- Next: "Assets off the CDNs" on a branch stacked on `fix/clean-clone-start` (the owner agreed to
+  stacking on 2026-10-13).
 
 ## Change list
 
@@ -51,9 +49,11 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - `app/static/js/htmx.min.js` is 1.9.6, the README says HTMX 2.
   - Startup creates `superuser@admin.com` / `password123` and logs the password.
   - `poetry` is not installed on the Mac Pro; `uv` is.
-- [ ] **Make it start from a clean clone** (do first, small): `loguru` in the runtime
-  dependencies, one committed initial migration (or the imports in `script.py.mako`), the
-  `AUTH_SECRET` name in the README, the test import, uv instead of poetry, `.env.example`.
+- [x] **Make it start from a clean clone** (2026-10-13, branch `fix/clean-clone-start`): uv with a
+  lock file, all dependencies upgraded and pinned, the initial migration `0001_initial_schema` with
+  named constraints, the test suite collecting and passing, `.env.example`, and the README for the
+  uv flow with `AUTH_SECRET`. Left open by it, listed below: sqlalchemy 2.1, the `Permission`
+  type, the login cookie on http, `setup.ps1`.
 - [ ] **Assets off the CDNs** (`app/templates/base/auth_base.html` loads Flowbite 1.8.1 CSS and
   2.0.0 JS from cdnjs, Alpine `3.x.x` from jsdelivr, hyperscript from unpkg): vendor pinned
   Flowbite 4.0.2 JS, htmx 2.x and Alpine under `app/static/`, with a `VENDORED.md` (source,
@@ -71,10 +71,25 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   superuser comes from the environment or a command, not a fixed password at startup. Add
   security headers with a strict content security policy (own origin only, no inline script).
   htmx: `allowEval=false`, `includeIndicatorStyles=false`, `selfRequestsOnly=true`.
+  Found in the review of the upgrade (2026-10-13), both older than it: `verify_jwt` in
+  `app/database/security.py:110` calls the async `on_decode_jwt` without `await`, so the payload is
+  always truthy and any cookie value passes that check; `app/routes/view/upload.py:43` awaits the
+  non-async `handle_error`, a TypeError on the upload error path.
+  The login cookie (`CookieTransport` in `app/database/security.py`) is always `Secure`, whatever
+  `COOKIE_SECURE` says: login over plain http on 127.0.0.1 may fail in some browsers. Not tried.
 - [ ] **Housekeeping**: static and template paths relative to the package (today relative to the
   working directory), a LICENSE file (the README says MIT, the repo has none: ask upstream or
-  state it for our changes), ruff and pytest brought up to date (ruff is pinned at 0.0.291), `setup.ps1` and the Windows path
-  in the README, `@app.on_event` to a lifespan handler, tests (3 files today).
+  state it for our changes), the 49 existing ruff findings, sqlalchemy 2.1 once
+  fastapi-users-db-sqlalchemy allows it (held at 2.0.54), `setup.ps1` and the Windows path
+  in the README (`setup.ps1` still calls poetry and the old migration flow), `@app.on_event` to a
+  lifespan handler, more tests (15 today; they create missing tables in the `DATABASE_URL`
+  database, so they want a throwaway database or a fixture that refuses a real one).
+- [ ] **`Permission` type** (`app/models/groups.py`): it subclasses `sqlalchemy.Enum` with no
+  values, so `group.permission` is an unconstrained string and would fail on Postgres as a native
+  enum. Make it a Python `enum.Enum` or a plain string, with its own migration (`0002_...`).
 - [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
   `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
   and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
+- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
+  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
+  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.

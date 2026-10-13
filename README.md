@@ -12,16 +12,16 @@
 
 This project leverages several external libraries to provide a robust and efficient solution. Below is a brief description of each library along with a link to their documentation:
 
-- [FastAPI](https://fastapi.tiangolo.com/) (^0.115.14): A modern, fast (high-performance), web framework for building APIs and serving HTML templates with Python 3.6+ based on standard Python type hints.
-- [SQLAlchemy](https://www.sqlalchemy.org/) (^2.0.41): The Python SQL toolkit and Object Relational Mapper that gives application developers the full power and flexibility of SQL.
-- [FastAPI Users](https://fastapi-users.github.io/fastapi-users/) (^14.0.1): Ready-to-use and customizable users management for FastAPI.
-- [Uvicorn](https://www.uvicorn.org/) (^0.35.0): A lightning-fast ASGI server implementation, using `uvloop` and `httptools`.
-- [Jinja2](https://palletsprojects.com/p/jinja/) (^3.1.6): A modern and designer-friendly templating language for Python.
-- [NH3](https://github.com/Th3Whit3Wolf/nh3) (^0.2.21): A Python binding to the HTML sanitizer `h3`.
-- [Alembic](https://alembic.sqlalchemy.org/en/latest/) (^1.16.2): A lightweight database migration tool for usage with the SQLAlchemy Database Toolkit.
+- [FastAPI](https://fastapi.tiangolo.com/) (0.143.0): A modern, fast (high-performance), web framework for building APIs and serving HTML templates with Python 3.6+ based on standard Python type hints.
+- [SQLAlchemy](https://www.sqlalchemy.org/) (2.0.54): The Python SQL toolkit and Object Relational Mapper that gives application developers the full power and flexibility of SQL.
+- [FastAPI Users](https://fastapi-users.github.io/fastapi-users/) (15.0.5): Ready-to-use and customizable users management for FastAPI.
+- [Uvicorn](https://www.uvicorn.org/) (0.54.0): A lightning-fast ASGI server implementation, using `uvloop` and `httptools`.
+- [Jinja2](https://palletsprojects.com/p/jinja/) (3.1.6): A modern and designer-friendly templating language for Python.
+- [NH3](https://github.com/Th3Whit3Wolf/nh3) (0.3.7): A Python binding to the HTML sanitizer `h3`.
+- [Alembic](https://alembic.sqlalchemy.org/en/latest/) (1.20.0): A lightweight database migration tool for usage with the SQLAlchemy Database Toolkit.
 - [AlpineJS](https://alpinejs.dev/) (loaded from CDN): A rugged, minimal framework for composing JavaScript behavior in your HTML templates.
 - [Flowbite](https://flowbite.com/) (loaded from CDN): A component library built on top of Tailwind CSS for building modern web interfaces.
-- [Pydantic](https://docs.pydantic.dev/2.0/) (^2.11.7): Data validation and settings management using Python type annotations.
+- [Pydantic](https://docs.pydantic.dev/2.0/) (2.14.1): Data validation and settings management using Python type annotations.
 
 ## Features Implemented
 
@@ -64,7 +64,7 @@ This project leverages several external libraries to provide a robust and effici
 
 ## Quick Setup Using PowerShell Script
 
-For Windows users, you can use the provided `setup.ps1` script to automate the setup and management of your FastAPI-HTMX project. This script covers all essential project operations.
+For Windows users, you can use the provided `setup.ps1` script to automate the setup and management of your FastAPI-HTMX project. This script covers all essential project operations. Note: `setup.ps1` still expects poetry and is not updated for uv yet.
 
 ### Available Commands
 
@@ -98,100 +98,73 @@ For Windows users, you can use the provided `setup.ps1` script to automate the s
 
 ---
 
-## Manual Setup Procedure
+## Setup With uv
 
-You can also set up and manage the project manually using the following steps:
-
-### Creating the `.env` File
-
-Create a `.env` file in the root directory of the project and add the following environment variables:
-
-```
-# Database Configuration
-DATABASE_URL="sqlite+aiosqlite:///./users.db"
-SECRET_KEY="super-secret-key-example-123456789"
-
-# MinIO Configuration (Required for file uploads)
-MINIO_URL="http://localhost:9000"
-MINIO_ACCESS_KEY="minioadmin123456789"
-MINIO_SECRET_KEY="miniosecret987654321xyz"
-MINIO_BUCKET="my-fastapi-bucket"
-MINIO_SECURE=false
-
-# CSRF Protection
-CSRF_SECRET_KEY="csrf-secret-key-example-987654321"
-COOKIE_SAMESITE="lax"
-COOKIE_SECURE=true
-```
-
-Replace `your_secret_key` with a strong secret key for your application.
-
-**Note:** While using sample MinIO credentials will allow the database to record file uploads, the actual files won't be stored without valid MinIO server credentials. For full file storage functionality, set up a MinIO server or use valid MinIO service credentials.
-
-### Running the Project
+You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 1. **Clone the repository:**
 
    ```sh
-   git clone https://github.com/yourusername/project-management.git
-   cd project-management
+   git clone https://github.com/maanas/FastAPI-HTMX.git
+   cd FastAPI-HTMX
    ```
 
-2. **Install dependencies:**
-   If you are using `poetry`, run:
+2. **Install dependencies.** This creates `.venv` from `uv.lock` (runtime and dev tools):
 
    ```sh
-   poetry install
+   uv sync
    ```
 
-   If you are using `pip`, run:
+3. **Create the `.env` file** and edit it. At least replace the `change-me-...` secrets:
 
    ```sh
-   pip install -r requirements.txt
+   cp .env.example .env
    ```
 
-3. **Run database migrations:**
+4. **Create the database** from the committed migration:
 
    ```sh
-   alembic upgrade head
+   .venv/bin/alembic upgrade head
    ```
 
-4. **Run database migrations:**
+   If you have a database that was created before the migration existed, run
+   `.venv/bin/alembic stamp 0001_initial_schema` once instead. To add the next migration, see
+   `app/migrations/README`.
+
+5. **Start the application:**
 
    ```sh
-   alembic revision --autogenerate -m "Initial migration"
+   .venv/bin/python main.py
    ```
 
-5. **Insert Required import in Migration File:**
+   It serves on `http://127.0.0.1:8080` (API docs at `/docs`).
 
-   After generating the initial migration, open the newly created revision file in app/migrations/versions/ and add the following imports at the top of the file:
+6. **Run the tests.** Run them after step 4: they use the database `DATABASE_URL` points to.
 
    ```sh
-   import fastapi_users_db_sqlalchemy.generics
-   import app.models.groups
+   .venv/bin/python -m pytest -q app/tests
    ```
 
-6. **Apply the changes:**
+### Environment Variables
 
-   ```sh
-   alembic upgrade head
-   ```
+`.env.example` lists every variable with a placeholder value that works for local development
+over http. Copy it to `.env` and edit it. The app does not start without the variables marked
+required.
 
-7. **Start the application:**
-   If you are using `poetry`, run:
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | Database URL, SQLite by default (`sqlite+aiosqlite:///./users.db`) |
+| `AUTH_SECRET` | no, but set it | Signs the login token. Falls back to a built-in default if missing |
+| `MINIO_URL` | yes | MinIO server URL |
+| `MINIO_ACCESS_KEY` | yes | MinIO access key |
+| `MINIO_SECRET_KEY` | yes | MinIO secret key |
+| `MINIO_BUCKET` | yes | MinIO bucket name |
+| `MINIO_SECURE` | no (`false`) | `true` for HTTPS to MinIO. Use it in production |
+| `CSRF_SECRET_KEY` | yes | Signs the CSRF token |
+| `COOKIE_SAMESITE` | yes | CSRF cookie SameSite: lowercase `lax`, `strict` or `none`. `none` needs `COOKIE_SECURE=true` |
+| `COOKIE_SECURE` | yes | `false` for local http, `true` in production (HTTPS) |
 
-   ```sh
-   poetry run python main.py
-   ```
-
-   If you are using `uvicorn` directly, run:
-
-   ```sh
-   uvicorn main:app --reload
-   ```
-
-8. **Access the application:**
-   Open your web browser and navigate to `http://127.0.0.1:8080`.
+**Note:** While using placeholder MinIO credentials will allow the database to record file uploads, the actual files won't be stored without valid MinIO server credentials. For full file storage functionality, set up a MinIO server or use valid MinIO service credentials.
 
 ## Updating Model References in `init_models`
 
@@ -217,16 +190,16 @@ When you define a new **Database model** in your application, it's essential to 
 
 4. **Save Changes**: After adding the import statement for your new model, save the changes to the `base.py` file.
 
-5. **Generate Alembic Migration**: With the new model imported in the `init_models` function, you can now generate an Alembic migration script that includes this model. Run the Alembic command to autogenerate a migration:
+5. **Generate Alembic Migration**: With the new model imported in the `init_models` function, you can now generate an Alembic migration script that includes this model. Run the Alembic command to autogenerate a migration (see `app/migrations/README`):
 
    ```bash
-   alembic revision --autogenerate -m "Added new model Invoice"
+   .venv/bin/alembic revision --autogenerate --rev-id 0002_invoice -m "Added new model Invoice"
    ```
 
 6. **Review and Apply Migration**: Always review the generated migration script to ensure it accurately represents the changes to your models. After reviewing, apply the migration to update your database schema:
 
    ```bash
-   alembic upgrade head
+   .venv/bin/alembic upgrade head
    ```
 
 ## Project Structure
@@ -268,11 +241,12 @@ FastAPI-HTMX/
 │   ├── components/       # Reusable components
 │   └── partials/         # Partial templates
 ├── tests/              # Unit and integration tests
-├── .env                # Environment variables
+├── .env                # Environment variables (copy of .env.example, not committed)
+├── .env.example        # Template for .env
 ├── alembic.ini         # Alembic configuration
 ├── main.py             # Application entry point
-├── poetry.lock         # Poetry dependencies lock
-├── pyproject.toml      # Project configuration
+├── pyproject.toml      # Project configuration and pinned dependencies
+├── uv.lock             # Locked dependencies (uv)
 └── README.md           # Project documentation
 ```
 

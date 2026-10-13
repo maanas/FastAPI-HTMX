@@ -257,9 +257,7 @@ pip-selfcheck.json
 .history
 .ionide
 
-# Alembic migration files ###
-app/migrations/versions/*
-!app/migrations/versions/.keep
+# Alembic migrations are committed; only the bytecode is ignored (__pycache__ is covered above)
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,git,python,visualstudiocode,database,virtualenv
 

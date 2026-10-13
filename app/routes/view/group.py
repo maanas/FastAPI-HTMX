@@ -55,6 +55,7 @@ async def get_groups(
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
         response = templates.TemplateResponse(
+            request,
             "pages/groups.html",
             {
                 "request": request,
@@ -93,6 +94,7 @@ async def get_user_profile(
         db, user_id, join_relationships=True
     )
     return templates.TemplateResponse(
+        request,
         "partials/group/group_user_profile.html",
         {
             "request": request,
@@ -115,6 +117,7 @@ async def get_create_group(
     csrf_token = request.headers.get("X-CSRF-Token")
 
     response = templates.TemplateResponse(
+        request,
         "partials/group/add_group.html",
         {
             "request": request,
@@ -142,6 +145,7 @@ async def get_group_by_id(
     csrf_token = request.headers.get("X-CSRF-Token")
 
     return templates.TemplateResponse(
+        request,
         "partials/group/edit_group.html",
         {
             "request": request,
@@ -373,6 +377,7 @@ async def get_group_users(
 
     csrf_token = request.headers.get("X-CSRF-Token")
     return templates.TemplateResponse(
+        request,
         "partials/group/add_group_user.html",
         {
             "request": request,

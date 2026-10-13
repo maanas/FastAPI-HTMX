@@ -7,7 +7,8 @@ small, stable starter for our FastAPI sites. Open work and its order are in `TOD
 
 - Python 3.12, FastAPI, SQLAlchemy 2 (async, SQLite locally), Alembic, fastapi-users, Pydantic v2
 - Jinja2 templates with HTMX, Alpine.js, Tailwind CSS v4 and Flowbite v4
-- `uv` for the virtualenv (poetry is not installed here; `pyproject.toml` is still poetry format)
+- `uv` manages dependencies: `pyproject.toml` pins them, `uv.lock` locks them, `uv sync` creates `.venv`
+  (runtime plus the dev group with pytest and ruff)
 
 ## Project Structure
 
@@ -28,11 +29,13 @@ theme/flowbite/            submodule, Flowbite v4.0.2, reference only, nothing l
 ## Common Commands
 
 ```bash
-uv venv --python 3.12 && uv pip install -r requirements.txt loguru pytest   # loguru is missing from requirements.txt
-.venv/bin/python main.py                  # http://127.0.0.1:8080, needs .env (see README)
-.venv/bin/python -m pytest -q app/tests
+uv sync                                   # .venv from uv.lock
+cp .env.example .env                      # then edit it (see README)
+.venv/bin/alembic upgrade head            # create or update the database
+.venv/bin/python main.py                  # http://127.0.0.1:8080
+.venv/bin/python -m pytest -q app/tests   # run after alembic upgrade head
 uvx ruff check <files>
-.venv/bin/alembic revision --autogenerate -m "..." && .venv/bin/alembic upgrade head
+.venv/bin/alembic revision --autogenerate --rev-id 0002_<what> -m "<what>"   # next migration, see app/migrations/README
 ```
 
 ## Rules
