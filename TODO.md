@@ -19,16 +19,15 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Pull requests #1 to #8 are merged (2026-10-13). `main` holds the uv setup with pinned
   dependencies, the vendored assets, the CSS build, the whole template task (every template is
   Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed and the Alpine CSP build.
-  The suite has 324 tests.
+  The suite has 324 tests there, 415 with `feat/security`.
 - Git identity for this repo is `Maanas Royy <m4manas@gmail.com>` (local config, there is no
   global email). The fork's commits were recreated with it on 2026-10-13, so `main` was force
   pushed once by maanas.
 - Versions checked on 2026-10-13: every pinned package and vendored file is at its latest release
   (Flowbite 4.0.2, Alpine 3.17.4, htmx 2.0.11, Tailwind CLI 4.3.3, Inter 5.3.0, all direct Python
   dependencies), except sqlalchemy (held at 2.0.54 by fastapi-users-db-sqlalchemy).
-- Nothing has been opened in a browser yet. Requests against a started app and the tests cover
-  the pages, but the sidebar drawer, logout, popovers, the alerts after a create or delete, and
-  login through the real page are unverified as clicks. No upload, download or delete has run
+- Nothing has been opened in a browser yet (see "Browser pass"). Requests against a started app
+  and the tests cover the pages, not the clicks. No upload, download or delete has run
   against a real MinIO server (tests use a fake storage object).
 - Workers get their settings as environment variables, never a `.env` file: the ten names are in
   `.env.example`. This Mac has no `.env` for the repo. Workers must never run a bare `export`,
@@ -37,8 +36,12 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Three retro proposals were approved and applied on 2026-10-13 (checker: no `ls` of `.env`, no
   `timeout`; coder: stop a server by PID, never `pkill` by name; checker: exported settings
   instead of stopping on a missing `.env`).
-- Next: "Security" (the content security policy can now leave out `unsafe-eval`), with a browser
-  pass before or with it.
+- Six more were applied with the Security task (checker: smoke login recipe on port 8091 with a
+  superuser from the command, settings in zsh arrays; coder: a template guard needs a must-flag
+  and a must-not-flag case; reviewer: runs the tests with placeholder settings when the prompt
+  gives none; `htmx-patterns`: a router-wide guard needs a request per existing caller, and the
+  shipped headers, both in `reference/security.md`).
+- Next: the "Browser pass" item, then "htmx leftovers".
 
 ## Change list
 
@@ -149,22 +152,48 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   `skills/htmx-patterns/reference/flowbite-alpine.md` says the CSP build takes a property name or
   a method call only, which is stricter than 3.17.4 is (change it through a proposal or keep it
   as the house rule); the guard does not see a `{% if %}` block inside an Alpine attribute value.
-- [ ] **Security**: `app/database/security.py` logs the auth secret (`logger.critical(SECRET)`) and
-  defaults it to `my_default_secret_key`: remove the log, refuse to start on the default. The
-  superuser comes from the environment or a command, not a fixed password at startup. Add
-  security headers with a strict content security policy (own origin only, no inline script).
-  htmx: `allowEval=false`, `includeIndicatorStyles=false`, `selfRequestsOnly=true`.
-  Found in the review of the upgrade (2026-10-13), both older than it: `verify_jwt` in
-  `app/database/security.py:110` calls the async `on_decode_jwt` without `await`, so the payload is
-  always truthy and any cookie value passes that check; `app/routes/view/upload.py:43` awaits the
-  non-async `handle_error`, a TypeError on the upload error path.
-  The login cookie (`CookieTransport` in `app/database/security.py`) is always `Secure`, whatever
-  `COOKIE_SECURE` says: login over plain http on 127.0.0.1 may fail in some browsers. Not tried.
-  Found in the template task (2026-10-13): startup logs the seeded superuser's password
-  (`app/database/db.py:34`); `POST /auth/jwt/login` without the CSRF header or cookie answers 500
-  (`on_after_login` in `app/database/security.py:53` raises uncaught); `POST /auth/register`
-  accepts a request with an empty CSRF header; a superuser can still be deleted through the
-  fastapi-users API route `DELETE /users/{id}` without the self-delete guard the page has.
+- [x] **Security** (2026-10-13, branch `feat/security`): `AUTH_SECRET` is required (32 characters or
+  more, no default, never logged; `app/core/auth_settings.py`). Startup creates no superuser:
+  `.venv/bin/python -m app.commands.create_superuser` creates or promotes one from
+  `SUPERUSER_EMAIL` and `SUPERUSER_PASSWORD` or a prompt. The login cookie on `/` is really verified
+  (`verify_jwt` let any value pass), and its `Secure` and `SameSite` flags follow `COOKIE_SECURE`
+  and `COOKIE_SAMESITE` (lowercase `lax`, `strict` or `none` only). Every POST of the fastapi-users
+  routers (login, register, forgot and reset password, verify, the users API) needs the CSRF pair
+  and answers 403 without it (`require_csrf` in `app/database/security.py`); logout is exempt,
+  because the shell's logout button has no token. `DELETE /users/{own id}` answers 400.
+  `app/core/security_headers.py` sends the headers on every response: a content security policy
+  of own origin only (plus `data:` images for three form icons in `app.css`), no inline script or
+  style, no eval; HSTS only when `COOKIE_SECURE=true`. htmx runs with `allowEval`,
+  `allowScriptTags` and `includeIndicatorStyles` off. `/docs`, `/redoc` and `/openapi.json` are
+  off (Swagger UI needs a CDN and an inline script). The `await handle_error` bug in the upload
+  route was already gone. Checked with curl against a started app and by reading the vendored
+  scripts, not in a browser.
+  Left open by it:
+  - A database made before this change still holds `superuser@admin.com` / `password123`: delete
+    that user or change its password.
+  - `setup.ps1` now generates a random secret; that edit was never run (no PowerShell here).
+  - The `/users` API router is used by no template or script. Decide whether it stays mounted.
+  - The login and register forms show nothing on a 403 (an expired CSRF cookie); they handle only
+    success and 400.
+  - `http_exception_handler` (`app/exception.py`) turns every non-401 `HTTPException` into a bare
+    400, including the library's 403 and 404.
+  - An unhandled exception answers 500 without the security headers (Starlette answers it outside
+    user middleware).
+  - `COOKIE_SAMESITE=none` with `COOKIE_SECURE=false` is refused by fastapi-csrf-protect on the
+    first CSRF request, not at startup.
+  - The first htmx indicator needs the `.htmx-indicator` rules in `app/static/css/src/` (htmx no
+    longer injects them). An Alpine `:style` string binding would be blocked by the policy and no
+    guard catches it. The eval guard does not see `data-hx-*` attributes or a `js:` value that
+    comes from a Jinja expression.
+- [ ] **Browser pass** (never done; the content security policy makes it more important). With
+  the console open, watch for CSP violations, "CSP Parser Error" and "Undefined variable" on:
+  `/login` and `/register` (password toggle, error messages, a real login and register);
+  `/dashboard` (navbar user dropdown, mobile sidebar drawer, logout); roles, users and groups (add,
+  edit, delete with its confirm, both Cancel buttons, the alerts, the `revealed` load of the
+  groups list); `/uploads` (upload, table refresh, download, delete, against a real MinIO). Check
+  that `app.css` and the Inter font load and the select, checkbox and radio icons show. Login over
+  plain http on 127.0.0.1 with `COOKIE_SECURE=false`. Decide the four custom "required" messages
+  (see "Hyperscript out").
 - [ ] **Housekeeping**: static and template paths relative to the package (today relative to the
   working directory), a LICENSE file (the README says MIT, the repo has none: ask upstream or
   state it for our changes), the 49 existing ruff findings, sqlalchemy 2.1 once
