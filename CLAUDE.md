@@ -35,6 +35,7 @@ cp .env.example .env                      # then edit it (see README)
 .venv/bin/python main.py                  # http://127.0.0.1:8080
 .venv/bin/python -m pytest -q app/tests   # run after alembic upgrade head
 uvx ruff check <files>
+tools/css.sh [--watch]                    # rebuild app/static/css/app.css (Tailwind, no Node)
 .venv/bin/alembic revision --autogenerate --rev-id 0002_<what> -m "<what>"   # next migration, see app/migrations/README
 ```
 
