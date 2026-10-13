@@ -16,12 +16,14 @@ class _RuleScanner(HTMLParser):
                 self.problems.append(f"line {line}: <{tag}> has a style attribute")
             elif name.startswith("on"):
                 self.problems.append(f"line {line}: <{tag}> has handler {name}")
+            elif name.startswith("hx-on"):
+                self.problems.append(f"line {line}: <{tag}> has htmx handler {name}")
 
     handle_startendtag = handle_starttag
 
 
 def template_rule_violations(text):
-    """Inline scripts, style attributes and on* handlers found in a template."""
+    """Inline scripts, style attributes, on* and hx-on handlers found in a template."""
     scanner = _RuleScanner()
     scanner.feed(text)
     scanner.close()

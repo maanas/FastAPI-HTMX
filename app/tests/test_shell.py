@@ -1,4 +1,3 @@
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -6,12 +5,9 @@ from httpx import ASGITransport, AsyncClient
 
 from app.app import app
 from app.database.security import current_active_user
-from app.tests.template_rules import template_rule_violations
 
 pytestmark = pytest.mark.anyio
 
-TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
-SHELL_DIRS = (TEMPLATES / "base", TEMPLATES / "partials" / "shell")
 ADMIN_LINKS = ("/role", "/user", "/groups", "/uploads")
 
 
@@ -60,11 +56,3 @@ async def test_login_page_has_no_navbar_or_sidebar(client):
     assert response.status_code == 200
     assert "<nav" not in response.text
     assert 'id="top-bar-sidebar"' not in response.text
-
-
-def test_shell_templates_have_no_inline_script_style_or_handler():
-    files = [p for d in SHELL_DIRS for p in d.rglob("*.html")]
-    assert files
-    for path in files:
-        text = path.read_text(encoding="utf-8")
-        assert not template_rule_violations(text), path

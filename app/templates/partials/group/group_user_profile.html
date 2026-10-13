@@ -1,10 +1,10 @@
-{% extends "base/auth_base.html" %} {% block title %} Group | FastAPI HTMX {%
-endblock %} {% block content %}
-<li>
-  {% if user_profile.profile and user_profile.profile.first_name %}
-  {{user_profile.profile.first_name}} {{user_profile.profile.last_name}} | Role:
-  {{user_profile.role.role_name}} {% else %}
-  <span class="text-red-500">Allocated user has missing profile</span>
-  {% endif %}
-</li>
-{% endblock %}
+{# Fragment, no layout. Fills one table cell of the groups list (hx-swap innerHTML), not the content area. #}
+{% if error_messages %}
+{% for error in error_messages %}
+<span class="text-fg-danger">{{ error }}</span>
+{% endfor %}
+{% elif user_profile.profile and user_profile.profile.first_name %}
+{{ user_profile.profile.first_name }} {{ user_profile.profile.last_name }} | Role: {{ user_profile.role.role_name }}
+{% else %}
+<span class="text-fg-danger">Allocated user has missing profile</span>
+{% endif %}

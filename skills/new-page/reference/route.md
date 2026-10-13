@@ -37,12 +37,16 @@ async def get_<name>(
   superuser-only page checks `current_user.is_superuser` and raises `HTTPException(403)`.
 - Reads and writes go through `SQLAlchemyCRUD[Model](Model)`. Do not write a second CRUD helper and
   do not put a query in the handler when the helper has the method.
-- A page with a form: the `GET` creates the CSRF pair, sets the cookie on the response and passes
-  `csrf_token` to the template. Every write handler starts with
-  `await csrf_protect.validate_csrf(request)`.
+- A page with a form: the `GET` creates the CSRF pair, sets the cookie and passes `csrf_token` to
+  the template. A write handler goes: auth dependency, `await csrf_protect.validate_csrf(request)`,
+  superuser or ownership check, then the form and model rows, never before.
 - Form values: `nh3.clean(str(form.get("field")))`, then the Pydantic schema. Never store a raw
   form value.
-- Errors: `except Exception as e: return handle_error("<template>", {...}, e)`, as in `role.py`.
+- Errors: `except Exception as e: return handle_error("<template>", {...}, e)`, as in `role.py`. A
+  unique violation or unknown foreign key id is a 4xx alert (catch `IntegrityError`, roll back),
+  never a 500. Alert text is fixed server text: no client input, host, bucket or path.
+- After `await db.rollback()` do not read `current_user` or another loaded row; copy the id or
+  email into a local before the `try`. Never log an email, token or CSRF value.
 - No blocking call (file, network, `time.sleep`) in an async handler.
 - JSON does not come from `app/routes/view/`; a JSON route goes in `app/routes/api/`.
 - Partial versus page, status codes and `HX-*` headers: the `htmx-patterns` skill,

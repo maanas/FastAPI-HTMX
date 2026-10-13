@@ -15,3 +15,7 @@ For each route:
 Use `httpx.AsyncClient` with `ASGITransport(app=app)` and override `current_active_user` and the
 session dependency through `app.dependency_overrides`; do not sign in through the login route in
 every test.
+
+A route whose error path rolls back needs one test with a real user row loaded through the route's
+own session (not the plain fake), that triggers the error and asserts the 4xx. A fake user cannot be
+expired by the rollback and hides `MissingGreenlet`.

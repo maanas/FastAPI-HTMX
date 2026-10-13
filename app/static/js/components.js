@@ -5,7 +5,6 @@ document.addEventListener("alpine:init", () => {
     showRepeatPasswordError: false,
     showPasswordError: false,
     showPassword: false,
-    showSubmitButton: false,
     showServerError: false,
     username: "",
     password: "",
@@ -26,12 +25,10 @@ document.addEventListener("alpine:init", () => {
     passwordsMatch() {
       if (!this.repeatPassword) {
         this.showRepeatPasswordError = false;
-        this.showSubmitButton = true;
       } else if (this.password !== this.repeatPassword) {
         this.showRepeatPasswordError = true;
       } else {
         this.showRepeatPasswordError = false;
-        this.showSubmitButton = false;
       }
     },
     validatePassword() {
@@ -42,9 +39,6 @@ document.addEventListener("alpine:init", () => {
       } else {
         this.showPasswordError = false;
       }
-    },
-    disableButton() {
-      this.showSubmitButton = true;
     },
     checkServerError() {
       if (this.showServerError) {

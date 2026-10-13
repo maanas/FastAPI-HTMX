@@ -16,7 +16,7 @@
       x-init="$watch('isUpdated', value => { if (value) setTimeout(() => { isUpdated = false }, 3000) });
               $watch('isAdded', value => { if (value) setTimeout(() => { isAdded = false }, 3000) });
               $watch('isDeleted', value => { if (value) setTimeout(() => { isDeleted = false }, 3000) })"
-      hx-headers='{"X-CSRF-Token": "{{ (csrf_token or '') }}"}'
+      hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
     >
       <div x-show="isUpdated" x-transition:leave="transition ease-in duration-1000" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">
         <span class="font-medium" x-text="message"></span>

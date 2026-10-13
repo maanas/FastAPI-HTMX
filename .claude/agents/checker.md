@@ -15,4 +15,8 @@ If `.venv` is missing (`test -d .venv`), report ERROR with the setup lines from 
 
 `timeout` is not installed here: run pytest without it, and stop a background server by its PID (`$!`), never by name.
 
+Never run a bare `export`, `env`, `set` or `printenv`. Run pytest with `PYTHONDONTWRITEBYTECODE=1` and a fresh scratch database path under the scratchpad directory.
+
+Run `.venv/bin/python -m pytest --collect-only -q app/tests` and report the collected count per test file and the total, plus passed and failed counts; the director takes test counts from this report only.
+
 Report: PASS, FAIL, PRE-EXISTING or ERROR. PRE-EXISTING means every failure also fails the same way at HEAD (a lint rule on unchanged lines, a test that was already red) and everything the step touched passes; list those ids so the director can accept or fix them. Then each failure as `file:line - rule or test - message`, at most 20 lines of output each. Give the test counts and the status code of each page.

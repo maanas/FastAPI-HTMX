@@ -1,51 +1,36 @@
+{# Fragment, no layout: the rows of the files table, swapped into #upload-files-table. #}
+{# Table: theme/flowbite/content/components/tables.md "Default table" #}
+{% if error_messages %}
+<tr class="bg-neutral-primary border-b border-default">
+  <td colspan="4" class="px-6 py-4 text-fg-warning" role="alert">
+    {% for error_message in error_messages %}
+    <span class="font-medium">{{ error_message }}</span>
+    {% endfor %}
+  </td>
+</tr>
+{% endif %}
 {% for file in files %}
-<tr
-  class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
->
-  <td
-    scope="row"
-    class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-  >
-    {{ file.name }}
+<tr class="bg-neutral-primary border-b border-default">
+  <th scope="row" class="px-6 py-4 font-medium text-heading whitespace-nowrap">{{ file.name }}</th>
+  <td class="px-6 py-4">{{ file.created.strftime('%d-%m-%Y') }}</td>
+  {% if file.unique_name %}
+  <td class="px-6 py-4">
+    <a
+      href="{{ url_for('download_file', file_unique_name=file.unique_name) }}"
+      class="font-medium text-fg-brand hover:underline"
+    >Download</a>
   </td>
-  <td
-    class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-  >
-    {{ file.created.strftime('%d-%m-%Y') }}
-  </td>
-  <td
-    class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-  >
-    {% if file.unique_name %}
-    <button
-      id="file-download-button"
-      class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-      hx-get="{{ url_for('download_file', file_unique_name=file.unique_name) }}"
-      hx-trigger="click"
-      hx-target="this"
-      hx-swap="none"
-    >
-      Download
-    </button>
-    {% else %}
-    <span class="text-red-500">Error: Unique ID is missing</span>
-    {% endif %}
-  </td>
-
-  <td
-    class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-  >
+  <td class="px-6 py-4">
     <button
       type="button"
-      id="file-download-button"
-      class="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
       hx-delete="{{ url_for('delete_file', file_unique_name=file.unique_name) }}"
-      hx-vals='{"file_id": "{{file.id}}", "group_name": "testing"}'
-      hx-trigger="click"
-      hx-swap="none"
-    >
-      Delete
-    </button>
+      hx-target="#upload-result"
+      hx-swap="innerHTML"
+      class="font-medium text-fg-danger hover:underline"
+    >Delete</button>
   </td>
+  {% else %}
+  <td colspan="2" class="px-6 py-4 text-fg-danger">Error: Unique ID is missing</td>
+  {% endif %}
 </tr>
 {% endfor %}
