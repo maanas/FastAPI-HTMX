@@ -31,8 +31,13 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   `.env.example`.
 - Two retro proposals wait for the owner in `.claude/learning/proposals/` (checker: no `ls` of
   `.env`, no `timeout`; coder: stop a server by PID, never `pkill` by name).
-- Next: "Assets off the CDNs" on a branch stacked on `fix/clean-clone-start` (the owner agreed to
-  stacking on 2026-10-13).
+- Branch `feat/vendor-assets` is pull request #3 (https://github.com/maanas/FastAPI-HTMX/pull/3),
+  stacked on `fix/clean-clone-start`: merge #2 first (2026-10-13). No template loads
+  from a CDN any more. Flowbite JS 4.0.2, Alpine 3.17.4 and htmx 2.0.11 are vendored under
+  `app/static/vendor/` and listed in `VENDORED.md`, each verified against the npm registry
+  checksum. Nothing was opened in a browser: Flowbite JS 4.0.2 against the 1.x markup, Alpine
+  3.17.4 and htmx 2 client behaviour are unverified. Open the pages once before relying on it.
+- Next: "CSS build", then "Templates to Flowbite v4 markup".
 
 ## Change list
 
@@ -54,10 +59,29 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   named constraints, the test suite collecting and passing, `.env.example`, and the README for the
   uv flow with `AUTH_SECRET`. Left open by it, listed below: sqlalchemy 2.1, the `Permission`
   type, the login cookie on http, `setup.ps1`.
-- [ ] **Assets off the CDNs** (`app/templates/base/auth_base.html` loads Flowbite 1.8.1 CSS and
-  2.0.0 JS from cdnjs, Alpine `3.x.x` from jsdelivr, hyperscript from unpkg): vendor pinned
-  Flowbite 4.0.2 JS, htmx 2.x and Alpine under `app/static/`, with a `VENDORED.md` (source,
-  version, licence, sha256). The files come from the npm registry tarballs with curl, no Node.
+- [x] **Assets off the CDNs** (2026-10-13, branch `feat/vendor-assets`): Flowbite JS 4.0.2, Alpine
+  3.17.4 and htmx 2.0.11 vendored from the npm registry tarballs with curl (no Node), listed in
+  `VENDORED.md`. Two files are vendored only until their own item replaces them: the Flowbite
+  1.8.1 stylesheet ("CSS build"; it holds three unused S3 image URLs) and hyperscript 0.9.11
+  ("Hyperscript out"). htmx 2 sends DELETE parameters in the URL: the group and file delete routes
+  now read the query string.
+- [ ] **htmx leftovers** found in the htmx 2 audit (2026-10-13), all older than it:
+  - `delete_file` in `app/routes/view/upload.py` has no CSRF check (the group and role deletes do).
+  - `hx-vals` in `app/templates/pages/groups.html:214` and `partials/upload/files_table.html` is
+    JSON built by string interpolation: a quote in a name breaks it. Use `hx-vals` from a
+    `tojson` filter or a path parameter.
+  - `hx-ext="response-targets"` (`user.html:88`, `groups.html:96`, `role.html:124`) and
+    `hx-target-404` (`groups.html:104`, `role.html:132`) need an extension that was never loaded:
+    vendor it or remove the attributes.
+  - `hx-get` and `hx-post` use absolute URLs from `url_for`. htmx 2 refuses a request whose
+    origin differs from the page (`selfRequestsOnly`), so behind a proxy that changes scheme or
+    host nothing is sent: run uvicorn with proxy headers or render relative URLs.
+  - `hx-on::after-request` in `pages/upload.html:144` needs eval, and `user.html:293` deletes
+    with an `onclick` handler: both go when the strict content security policy comes.
+  - `handle_error` (`app/routes/view/errors.py`) answers 200 with an error body for every
+    failure, including a missing CSRF header: a rejected request should be a 4xx.
+  - `skills/htmx-patterns` still says htmx is 1.9.6 in `app/static/js/` (a skill changes only
+    through an approved proposal).
 - [ ] **CSS build**: Tailwind v4 with its standalone CLI, one tokens file with Flowbite's theme
   variables, built CSS committed. Open: whether Flowbite's Tailwind plugin (`theme/flowbite/plugin.js`)
   loads in the standalone CLI without `node_modules`; if not, say so before adding Node.

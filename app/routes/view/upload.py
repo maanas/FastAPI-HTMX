@@ -1,6 +1,5 @@
 import json
 import uuid
-from urllib.parse import parse_qs, unquote_plus
 
 import nh3
 from fastapi import Depends, File, HTTPException, Request, UploadFile
@@ -188,11 +187,8 @@ async def delete_file(
                 status_code=403, detail="Not authorized to delete files"
             )
 
-        extra_info = await request.body()
-
-        parsed_values = parse_qs(unquote_plus(extra_info.decode()))
-
-        file_id = uuid.UUID(parsed_values["file_id"][0])
+        # htmx 2 sends DELETE values (hx-vals) in the query string, not in a body
+        file_id = uuid.UUID(request.query_params["file_id"])
 
         file_response = await minio.remove_file(file_unique_name)
         if file_response.startswith("Error occurred:"):
