@@ -1,8 +1,6 @@
-import os
 import uuid
 from typing import Optional
 
-from dotenv import load_dotenv
 from fastapi import Depends, Request, Response
 from fastapi_csrf_protect import CsrfProtect
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin
@@ -16,14 +14,10 @@ from fastapi_users.jwt import decode_jwt
 from jwt.exceptions import InvalidTokenError
 from loguru import logger
 
+from app.core.auth_settings import get_auth_secret
 from app.database.db import User, get_user_db
 
-SECRET: str = os.getenv("AUTH_SECRET", "my_default_secret_key")
-
-logger.critical(
-    "The SECRET key is being logged! Remove this before deploying to production."
-)
-logger.critical(SECRET)
+SECRET: str = get_auth_secret()
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -31,17 +25,17 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     verification_token_secret = SECRET
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
-        print(f"User {user.id} has registered.")
+        logger.info(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        print(f"User {user.id} has forgot their password. Reset token: {token}")
+        logger.info(f"User {user.id} requested a password reset.")
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        print(f"Verification requested for user {user.id}. Verification token: {token}")
+        logger.info(f"Verification requested for user {user.id}.")
 
     async def on_after_login(
         self,
@@ -51,7 +45,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     ):
         csrf_protect = CsrfProtect()
         await csrf_protect.validate_csrf(request)
-        print(f"User {user.id} logged in.")
+        logger.info(f"User {user.id} logged in.")
 
     # Decoding the JWT token using the inheritance of the BaseUserManager
     async def on_decode_jwt(self, jwt_token: str):

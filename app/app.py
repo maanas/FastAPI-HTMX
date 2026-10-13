@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from app.database.db import User, create_db_and_tables
+from app.database.db import User
 from app.database.security import auth_backend, current_active_user, fastapi_users
 from app.exception import http_exception_handler
 from app.routes.view.group import group_view_route
@@ -63,9 +63,6 @@ async def authenticated_route(user: User = Depends(current_active_user)):
 
 @app.on_event("startup")
 async def on_startup():
-    # Not needed if you setup a migration system like Alembic
-    await create_db_and_tables()
-    # await create_superuser()
     logger.info("Application started")
 
 

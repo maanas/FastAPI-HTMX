@@ -57,10 +57,15 @@ This project leverages several external libraries to provide a robust and effici
   <img src=app/static/img/logo/FastAPI-HTMX.gif>
 </p>
 
-## Admin Login Credential
+## Admin User
 
-- **email:** superuser@admin.com
-- **password:** password123
+The app creates no default admin. After `alembic upgrade head`, create one (or promote an existing user):
+
+```bash
+.venv/bin/python -m app.commands.create_superuser
+```
+
+It reads `SUPERUSER_EMAIL` and `SUPERUSER_PASSWORD` from the environment and prompts for a missing value in a terminal. The password needs at least 12 characters.
 
 ## Quick Setup Using PowerShell Script
 
@@ -154,7 +159,7 @@ required.
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `DATABASE_URL` | yes | Database URL, SQLite by default (`sqlite+aiosqlite:///./users.db`) |
-| `AUTH_SECRET` | no, but set it | Signs the login token. Falls back to a built-in default if missing |
+| `AUTH_SECRET` | yes | Signs the login token. The app refuses to start if it is missing, a placeholder or shorter than 32 characters. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
 | `MINIO_URL` | yes | MinIO server URL |
 | `MINIO_ACCESS_KEY` | yes | MinIO access key |
 | `MINIO_SECRET_KEY` | yes | MinIO secret key |
@@ -163,6 +168,8 @@ required.
 | `CSRF_SECRET_KEY` | yes | Signs the CSRF token |
 | `COOKIE_SAMESITE` | yes | CSRF cookie SameSite: lowercase `lax`, `strict` or `none`. `none` needs `COOKIE_SECURE=true` |
 | `COOKIE_SECURE` | yes | `false` for local http, `true` in production (HTTPS) |
+| `SUPERUSER_EMAIL` | no | Read only by `app.commands.create_superuser` |
+| `SUPERUSER_PASSWORD` | no | Read only by `app.commands.create_superuser`, at least 12 characters |
 
 **Note:** While using placeholder MinIO credentials will allow the database to record file uploads, the actual files won't be stored without valid MinIO server credentials. For full file storage functionality, set up a MinIO server or use valid MinIO service credentials.
 
