@@ -40,7 +40,7 @@ function Create-EnvFile {
         $envContent = @"
 # Database Configuration
 DATABASE_URL="sqlite+aiosqlite:///./users.db"
-SECRET_KEY="super-secret-key-example-123456789"
+AUTH_SECRET="super-secret-key-example-123456789"
 
 # MinIO Configuration (Required for file uploads)
 MINIO_URL="http://localhost:9000"
