@@ -10,6 +10,7 @@ pytestmark = pytest.mark.anyio
 
 TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
 CSS_URL = "/static/css/app.css"
+INTER_FILES = ("inter-latin-wght-normal.woff2", "inter-latin-ext-wght-normal.woff2")
 # A <link> or <script> tag that loads from an absolute http(s) URL.
 EXTERNAL_ASSET = re.compile(
     r"<(?:link|script)\b[^>]*?(?:href|src)\s*=\s*[\"']https?://", re.I | re.S
@@ -34,6 +35,19 @@ async def test_login_page_links_the_built_stylesheet(client):
     response = await client.get("/login")
     assert response.status_code == 200
     assert f'href="{CSS_URL}"' in response.text
+
+
+@pytest.mark.parametrize("name", INTER_FILES)
+async def test_vendored_inter_font_is_served(client, name):
+    response = await client.get(f"/static/vendor/inter/{name}")
+    assert response.status_code == 200
+    assert response.content
+
+
+async def test_built_stylesheet_points_at_the_vendored_inter_font(client):
+    response = await client.get(CSS_URL)
+    for name in INTER_FILES:
+        assert f"/static/vendor/inter/{name}" in response.text
 
 
 def test_templates_load_no_old_or_external_assets():

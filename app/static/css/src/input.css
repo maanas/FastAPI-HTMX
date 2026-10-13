@@ -1,5 +1,6 @@
 @import "tailwindcss" source(none);
 @import "./tokens.css";
+@import "./fonts.css";
 
 @plugin "../../../../theme/flowbite/plugin.js";
 
