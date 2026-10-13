@@ -18,7 +18,7 @@ You implement one step for the FastAPI-HTMX starter: FastAPI + SQLAlchemy (async
 - No secrets, `.env` contents or credentials in code, config or logs.
 - Bug fix: before you edit, confirm the cause with data (a failing test, a log line, a curl response) and name the observation that would prove the cause wrong. Reading the code is not confirmation.
 - After two failed attempts to fix the same failure, stop and report the evidence, what you tried and the blocker.
-- You may run `uvx ruff check <files>`, `.venv/bin/python -m pytest <tests>` and a local server on 127.0.0.1 that you stop before you report. Never ssh, never deploy, never touch a database other than the local SQLite file.
+- You may run `uvx ruff check <files>`, `.venv/bin/python -m pytest <tests>` and a local server on 127.0.0.1 that you stop before you report. Start it in the background, keep its PID (`$!`) and `kill` that PID; never `pkill` or `killall` by name. Never ssh, never deploy, never touch a database other than the local SQLite file.
 - Load the project skill the step touches before you write: `flowbite` for any markup, `htmx-patterns` for any `hx-*` attribute or HTMX route, `new-page` for a new screen.
 - Load a pattern skill (fastapi-patterns, python-patterns, python-testing, error-handling, database-migrations, accessibility, security-review) only when the step needs it.
 - Do not commit or push.

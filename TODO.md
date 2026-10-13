@@ -29,15 +29,25 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   (TestClient) on the upgraded stack, not in a browser.
 - Workers get their settings as environment variables, never a `.env` file: the ten names are in
   `.env.example`.
-- Two retro proposals wait for the owner in `.claude/learning/proposals/` (checker: no `ls` of
-  `.env`, no `timeout`; coder: stop a server by PID, never `pkill` by name).
+- Two retro proposals were approved and applied on 2026-10-13 (checker: no `ls` of `.env`, no
+  `timeout`; coder: stop a server by PID, never `pkill` by name). The owner also approved the
+  security, htmx and other items in the change list below as work to do.
 - Branch `feat/vendor-assets` is pull request #3 (https://github.com/maanas/FastAPI-HTMX/pull/3),
   stacked on `fix/clean-clone-start`: merge #2 first (2026-10-13). No template loads
   from a CDN any more. Flowbite JS 4.0.2, Alpine 3.17.4 and htmx 2.0.11 are vendored under
   `app/static/vendor/` and listed in `VENDORED.md`, each verified against the npm registry
   checksum. Nothing was opened in a browser: Flowbite JS 4.0.2 against the 1.x markup, Alpine
   3.17.4 and htmx 2 client behaviour are unverified. Open the pages once before relying on it.
-- Next: "CSS build", then "Templates to Flowbite v4 markup".
+- Branch `feat/css-build` (2026-10-13) is stacked on `feat/vendor-assets`: merge #2, then #3, then
+  its pull request. The stylesheet is now `app/static/css/app.css`, built by `tools/css.sh` with
+  the Tailwind 4.3.3 standalone CLI (no Node). Not opened in a browser: the old Flowbite 1.x
+  markup on a Tailwind v4 stylesheet will look different in places until the templates are redone.
+- This Mac has no `.env` for the repo: workers run the tests with the ten settings exported and a
+  throwaway SQLite file, so tell the checker not to report the missing `.env`.
+  A third retro proposal was approved and applied on 2026-10-13
+  (`2026-10-13-checker-env-vars-ok`: the checker uses exported settings instead of stopping on a
+  missing `.env`). No proposal is waiting.
+- Next: "Templates to Flowbite v4 markup".
 
 ## Change list
 
@@ -80,13 +90,25 @@ in variables in one place (colours are decided later, keep Flowbite's default th
     with an `onclick` handler: both go when the strict content security policy comes.
   - `handle_error` (`app/routes/view/errors.py`) answers 200 with an error body for every
     failure, including a missing CSRF header: a rejected request should be a 4xx.
-  - `skills/htmx-patterns` still says htmx is 1.9.6 in `app/static/js/` (a skill changes only
-    through an approved proposal).
-- [ ] **CSS build**: Tailwind v4 with its standalone CLI, one tokens file with Flowbite's theme
-  variables, built CSS committed. Open: whether Flowbite's Tailwind plugin (`theme/flowbite/plugin.js`)
-  loads in the standalone CLI without `node_modules`; if not, say so before adding Node.
+- [x] **CSS build** (2026-10-13, branch `feat/css-build`): `tools/css.sh` downloads the Tailwind
+  4.3.3 standalone CLI into the ignored `build/tailwind/`, checks its pinned sha256 and builds
+  `app/static/css/app.css` (committed, 47 KB) from `app/static/css/src/input.css`. The one tokens
+  file is `app/static/css/src/tokens.css`, an unchanged copy of Flowbite 4.0.2's default theme.
+  Flowbite's Tailwind plugin loads from the submodule without Node: its only outside dependency,
+  `mini-svg-data-uri` 1.4.4, is vendored at `theme/node_modules/`. The Flowbite 1.8.1 stylesheet
+  is gone. Rebuild after any template or script change that adds a class.
+  The Inter font the default theme names is vendored too (`@fontsource-variable/inter` 5.3.0,
+  OFL-1.1, latin and latin-ext, in `app/static/vendor/inter/`, declared in
+  `app/static/css/src/fonts.css`). When the content security policy comes, `font-src` needs
+  `'self'`.
 - [ ] **Templates to Flowbite v4 markup** (about 3,600 lines in `app/templates/`), `base.html` is an
-  empty file: make it the generic shell (Flowbite navbar + sidebar).
+  empty file: make it the generic shell (Flowbite navbar + sidebar). Found in the CSS build:
+  17 class names in the templates produce no CSS (12 typos with a dash for the colon such as
+  `hover-bg-blue-800` and `sm-w-auto`, `dark:shadow-sm-light` from Flowbite 1.x, and non-classes
+  such as `my-scroll`); inline scripts in `pages/user.html:527` and
+  `partials/auth_navigation.html:369` and `:378`; `pages/upload.html:443` loads
+  `static/js/upload.js` without the leading slash. The static assets test only catches `http(s)://`
+  URLs, not protocol-relative `//host` ones.
 - [ ] **Hyperscript out**: 5 templates still use it; move them to Alpine and drop the library.
 - [ ] **Alpine CSP build** (`@alpinejs/csp`) if the 11 `x-data` uses can live in `Alpine.data()`
   components, so the content security policy needs no `unsafe-eval`. Not tried yet.

@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-checker-env-probes
-status: proposed
+status: applied
+applied: 2026-10-13
 target: .claude/agents/checker.md
 metric: tokens:checker
 ---

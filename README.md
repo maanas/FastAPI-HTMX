@@ -166,6 +166,23 @@ required.
 
 **Note:** While using placeholder MinIO credentials will allow the database to record file uploads, the actual files won't be stored without valid MinIO server credentials. For full file storage functionality, set up a MinIO server or use valid MinIO service credentials.
 
+## CSS
+
+The stylesheet `app/static/css/app.css` is built from `app/static/css/src/input.css` (Tailwind v4 with
+the Flowbite plugin) and the design tokens in `app/static/css/src/tokens.css`. The built file is
+committed, so running the app needs no build step, and Node is not needed to rebuild it:
+
+```bash
+tools/css.sh            # rebuild app/static/css/app.css
+tools/css.sh --watch    # rebuild on every change
+```
+
+The first run downloads the Tailwind standalone CLI into `build/` (not committed) and checks its
+sha256 against the value pinned in the script. Rebuild and commit `app.css` after you change a
+template, a script in `app/static/js/` or `tokens.css`. See `VENDORED.md` for the pinned tools.
+
+The Inter font is vendored in `app/static/vendor/inter/` and declared in `app/static/css/src/fonts.css`, so pages load it from this server and never from a CDN.
+
 ## Updating Model References in `init_models`
 
 When you define a new **Database model** in your application, it's essential to update the `init_models` function to ensure that Alembic can detect and generate migrations for this new model correctly. This step is crucial for maintaining the integrity of your database schema and ensuring that all models are correctly versioned.

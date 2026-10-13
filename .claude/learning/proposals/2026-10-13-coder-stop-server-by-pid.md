@@ -1,6 +1,7 @@
 ---
 id: 2026-10-13-coder-stop-server-by-pid
-status: proposed
+status: applied
+applied: 2026-10-13
 target: .claude/agents/coder.md
 metric: correctness
 ---
