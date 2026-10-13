@@ -1,0 +1,3 @@
+[submodule "theme/flowbite"]
+	path = theme/flowbite
+	url = https://github.com/themesberg/flowbite
