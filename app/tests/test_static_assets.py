@@ -1,3 +1,4 @@
+import hashlib
 import os
 import re
 import subprocess
@@ -108,3 +109,24 @@ def test_built_stylesheet_equals_a_fresh_build(tmp_path):
     )
     built = (APP / "static" / "css" / "app.css").read_bytes()
     assert fresh.read_bytes() == built, "app.css is stale: run tools/css.sh"
+
+
+ALPINE_DIR = APP / "static" / "vendor" / "alpinejs"
+
+
+def test_shell_loads_the_alpine_csp_build():
+    shell = (TEMPLATES / "base" / "base.html").read_text()
+    assert '<script defer src="/static/vendor/alpinejs/alpine-csp.min.js">' in shell
+
+
+def test_standard_alpine_build_is_gone():
+    assert not (ALPINE_DIR / "alpine.min.js").exists()
+    for path in TEMPLATES.rglob("*.html"):
+        assert "alpine.min.js" not in path.read_text(), path
+
+
+def test_vendored_files_match_their_vendored_md_row():
+    rows = (ROOT / "VENDORED.md").read_text()
+    for path in (ROOT / "app" / "static" / "vendor").rglob("*.js"):
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert f"`{digest}`" in rows, f"{path.name}: sha256 not in VENDORED.md"
