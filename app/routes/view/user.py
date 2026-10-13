@@ -15,14 +15,23 @@ from app.models.users import Role as RoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
 from app.routes.view.errors import handle_error
+from app.routes.view.fragments import render_view
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.users import ProfileUpdate
 
 # from app.schema.users import RoleCreate
-from app.templates import templates
 
 # Create an APIRouter
 user_view_route = APIRouter()
+
+# Fragments (no layout) and the pages that include them, see fragments.py
+USER_LIST = "partials/user/user_list.html"
+USER_ADD = "partials/user/add_user.html"
+USER_EDIT = "partials/user/edit_user.html"
+# Navigation that replaces the content area, as the sidebar link does
+HX_LOCATION_USERS = json.dumps(
+    {"path": "/user", "target": "#dashboard-body", "swap": "outerHTML"}
+)
 
 
 user_crud = SQLAlchemyCRUD[UserModelDB](
@@ -67,9 +76,10 @@ async def get_users(
 
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
-        response = templates.TemplateResponse(
+        response = render_view(
             request,
             "pages/user.html",
+            USER_LIST,
             {
                 "request": request,
                 "users": users,
@@ -94,6 +104,7 @@ async def get_users(
                 "user_type": current_user.is_superuser,
             },
             e,
+            fragment=USER_LIST,
         )
 
 
@@ -120,13 +131,19 @@ async def get_create_users(
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add users")
         # Redirecting to the add role page upon successful role creation
-        return templates.TemplateResponse(
+        return render_view(
             request,
-            "partials/user/add_user.html",
-            {"request": request},
+            "pages/user_add.html",
+            USER_ADD,
+            {"request": request, "user_type": current_user.is_superuser},
         )
     except Exception as e:
-        return handle_error("partials/user/add_user.html", {"request": request}, e)
+        return handle_error(
+            "pages/user_add.html",
+            {"request": request, "user_type": current_user.is_superuser},
+            e,
+            fragment=USER_ADD,
+        )
 
 
 # Defining end point to get the record based on the id
@@ -139,6 +156,8 @@ async def get_user_by_id(
     skip: int = 0,
     limit: int = 100,
 ):
+    user = None
+    roles = []
     try:
         roles = await role_crud.read_all(db, skip, limit)
         # checking the current user as super user
@@ -150,9 +169,10 @@ async def get_user_by_id(
 
         csrf_token = request.headers.get("X-CSRF-Token")
 
-        return templates.TemplateResponse(
+        return render_view(
             request,
-            "partials/user/edit_user.html",
+            "pages/user_edit.html",
+            USER_EDIT,
             {
                 "request": request,
                 "user": user,
@@ -164,7 +184,7 @@ async def get_user_by_id(
     except Exception as e:
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/user/edit_user.html",
+            "pages/user_edit.html",
             {
                 "request": request,
                 "user": user,
@@ -173,6 +193,7 @@ async def get_user_by_id(
                 "csrf_token": csrf_token,
             },
             e,
+            fragment=USER_EDIT,
         )
 
 
@@ -235,7 +256,7 @@ async def post_update_user(
 
             csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
             headers = {
-                "HX-Location": "/user",
+                "HX-Location": HX_LOCATION_USERS,
                 "HX-Trigger": json.dumps(
                     {
                         "showAlert": {
@@ -267,7 +288,7 @@ async def post_update_user(
             csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
 
             headers = {
-                "HX-Location": "/user",
+                "HX-Location": HX_LOCATION_USERS,
                 "HX-Trigger": json.dumps(
                     {
                         "showAlert": {
@@ -291,7 +312,7 @@ async def post_update_user(
         roles = await role_crud.read_all(db)
         csrf_token = request.headers.get("X-CSRF-Token")
         return handle_error(
-            "partials/user/edit_user.html",
+            "pages/user_edit.html",
             {
                 "request": request,
                 "user": user,
@@ -299,4 +320,66 @@ async def post_update_user(
                 "csrf_token": csrf_token,
             },
             e,
+            fragment=USER_EDIT,
+        )
+
+
+# Defining a endpoint to delete the record based on the id
+@user_view_route.delete("/delete_user/{user_id}", response_class=HTMLResponse)
+async def delete_user(
+    request: Request,
+    user_id: uuid.UUID,
+    db: CurrentAsyncSession,
+    current_user: UserModelDB = Depends(current_active_user),
+    csrf_protect: CsrfProtect = Depends(),
+):
+    try:
+        await csrf_protect.validate_csrf(request)
+        # checking the current user as super user
+        if not current_user.is_superuser:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete users"
+            )
+
+        if user_id == current_user.id:
+            raise HTTPException(
+                status_code=400, detail="You cannot delete your own account"
+            )
+
+        user_to_delete = await user_crud.read_by_primary_key(db, user_id)
+        email = user_to_delete.email
+        await user_crud.delete(db, user_id)
+
+        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+        headers = {
+            "HX-Location": HX_LOCATION_USERS,
+            "HX-Trigger": json.dumps(
+                {
+                    "showAlert": {
+                        "type": "deleted",
+                        "message": f"{email} deleted successfully",
+                        "source": "user-page",
+                    },
+                }
+            ),
+            "csrf_token": csrf_token,
+        }
+        response = HTMLResponse(content="", headers=headers)
+
+        csrf_protect.unset_csrf_cookie(response)
+
+        csrf_protect.set_csrf_cookie(signed_token, response)
+
+        return response
+    except Exception as e:
+        csrf_token = request.headers.get("X-CSRF-Token")
+        return handle_error(
+            "pages/user.html",
+            {
+                "request": request,
+                "csrf_token": csrf_token,
+                "user_type": current_user.is_superuser,
+            },
+            e,
+            fragment=USER_LIST,
         )

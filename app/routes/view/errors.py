@@ -1,9 +1,10 @@
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from fastapi import HTTPException
 from loguru import logger
 from pydantic import ValidationError
 
+from app.routes.view.fragments import render_view
 from app.templates import templates
 
 
@@ -11,6 +12,7 @@ def handle_error(
     template: str,
     context: Dict,
     error: Union[ValidationError, HTTPException, Exception],
+    fragment: Optional[str] = None,
 ) -> templates.TemplateResponse:
     """
     Handles errors that occur during the processing of a request, and returns a template
@@ -22,6 +24,8 @@ def handle_error(
         It should include the request object and any database objects that need to be rendered in the template.
         For example, you might pass {"request": request, "group": await group_crud.read_by_primary_key(db, group_id)} as the context.
         error (Exception): This is the exception that was raised during the execution of your code.
+        fragment (str, optional): The fragment for `template` (a page). An HTMX request
+        gets the fragment, any other request gets `template`: no shell nested in a swap.
 
     Returns:
         A FastAPI response containing the rendered template with the error messages.
@@ -43,4 +47,6 @@ def handle_error(
 
     context["error_messages"] = error_messages
     logger.info(error_messages)
+    if fragment:
+        return render_view(context["request"], template, fragment, context)
     return templates.TemplateResponse(context["request"], template, context)

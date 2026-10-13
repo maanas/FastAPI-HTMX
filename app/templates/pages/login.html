@@ -1,38 +1,28 @@
-{% extends "base/auth_base.html" %} {% block title %} Login | FastAPI HTMX {%
-endblock %} {% block content %}
+{% extends "base/auth_base.html" %}
+{% block title %}Login | FastAPI HTMX{% endblock %}
+{% block content %}
+{# Card with form inputs: theme/flowbite/content/components/card.md #}
 <div
   id="login-page"
   x-data="login"
-  x-init="$watch('showError', (value) => { if (value) { 
-    setTimeout(() => { showError = false; }, 3000); 
-}  });"
-  class="bg-gray-100 dark:bg-gray-900 flex justify-center items-center h-screen"
+  x-init="$watch('showError', (value) => { if (value) { setTimeout(() => { showError = false; }, 3000); } });"
+  class="flex justify-center p-6"
 >
-  <div class="bg-indigo-100 shadow-lg rounded-lg p-8 max-w-md mx-auto w-96">
-    <h1
-      class="text-2xl font-bold mb-6 text-center"
-      style="min-width: 300px; color: #1a56db"
-    >
-      Admin Dashboard
-    </h1>
+  <div class="w-full max-w-sm bg-neutral-primary-soft p-6 border border-default rounded-base shadow-xs">
+    <h1 class="text-xl font-semibold text-heading mb-6">Admin Dashboard</h1>
     <img
       id="login-logo"
       src="/static/img/logo/undraw_login.png"
       alt="Login Logo"
-      class="max-w-xs rounded-full opacity-50 shadow-md mb-6"
+      class="mx-auto mb-6 max-w-xs rounded-base"
     />
-
-    <div class="mb-6">
-      <label
-        for="email"
-        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-        >Email address</label
-      >
+    <div class="mb-4">
+      <label for="email" class="block mb-2.5 text-sm font-medium text-heading">Email address</label>
       <input
         type="email"
         id="email"
         name="username"
-        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
         placeholder="john.doe@company.com"
         autocomplete="off"
         x-model="username"
@@ -42,7 +32,7 @@ endblock %} {% block content %}
       <p
         id="UsernameError"
         :class="{ 'hidden': !showUsernameError }"
-        class="hidden mb-2 text-red-600 dark:text-red-500"
+        class="hidden mt-2.5 text-sm text-fg-danger-strong"
       >
         <span class="font-medium">Please enter a valid email address</span>
       </p>
@@ -51,8 +41,8 @@ endblock %} {% block content %}
       <label
         for="password"
         id="password-label"
-        :class="{ 'hidden': !showPasswordDiv }"
-        class="hidden block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+        :class="{ 'hidden': !showPasswordDiv, 'block': showPasswordDiv }"
+        class="hidden mb-2.5 text-sm font-medium text-heading"
         >Password</label
       >
       <input
@@ -62,50 +52,42 @@ endblock %} {% block content %}
         x-model="password"
         x-show="showPasswordDiv"
         @keyup.enter="setCookie()"
-        :class="{ 'hidden': !showPasswordDiv }"
-        class="hidden bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        :class="{ 'hidden': !showPasswordDiv, 'block': showPasswordDiv }"
+        class="hidden bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand w-full px-3 py-2.5 shadow-xs placeholder:text-body"
         autocomplete="new-password"
         placeholder="•••••••••"
         required
       />
     </div>
-    <p
-      x-text="message"
+    <div
       x-show="showError"
-      class="mb-2 text-red-600 dark:text-red-500"
+      :class="{ 'hidden': !showError }"
+      class="hidden p-4 mb-4 text-sm text-fg-danger-strong rounded-base bg-danger-soft"
+      role="alert"
     >
-      <span class="font-medium"></span>
-    </p>
-    <a
-      class="text-sm font-medium text-gray-900 dark:text-gray-300 text-center align-middle"
-      >Forgot Username/Password</a
+      <span x-text="message" class="font-medium"></span>
+    </div>
+    <a class="block mb-4 text-sm font-medium text-fg-brand hover:underline">Forgot Username/Password</a>
+    <button
+      type="button"
+      id="login-button"
+      @click="setCookie"
+      :class="{ 'cursor-not-allowed opacity-50': showInputButton }"
+      class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none w-full mb-3"
     >
-    <div class="mt-2">
-      <button
-        type="button"
-        id="login-button"
-        @click="setCookie"
-        x-bind:class="{ 'text-white bg-blue-400 dark:bg-blue-500 cursor-not-allowed': showInputButton, ' text-white bg-blue-700 hover:bg-blue-800': !showInputButton }"
-        class="text-white bg-blue-700 hover-bg-blue-800 focus-ring-4 focus-outline-none focus-ring-blue-300 font-medium rounded-lg text-sm w-full sm-w-auto px-5 py-2.5 text-center dark-bg-blue-600 dark-hover-bg-blue-700 dark-focus-ring-blue-800"
-      >
-        Submit
-      </button>
-    </div>
-
-    <div class="mt-2">
-      <button
-        type="submit"
-        id="create-user-button"
-        hx-get="{{ url_for('get_register') }}"
-        hx-target="#login-page"
-        hx-swap="outerHTML"
-        hx-push-url="true"
-        class="text-white bg-green-500 hover:bg-green-600 focus-ring-4 focus-outline-none focus-ring-green-300 font-medium rounded-lg text-sm w-full sm-w-auto px-5 py-2.5 text-center dark-bg-green-600 dark-hover-bg-green-700 dark-focus-ring-green-800"
-      >
-        Register User
-      </button>
-    </div>
+      Submit
+    </button>
+    <button
+      type="button"
+      id="create-user-button"
+      hx-get="{{ url_for('get_register') }}"
+      hx-target="#login-page"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      class="text-body bg-neutral-primary-soft border border-default hover:bg-neutral-secondary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none w-full"
+    >
+      Register User
+    </button>
   </div>
 </div>
-
 {% endblock %}
