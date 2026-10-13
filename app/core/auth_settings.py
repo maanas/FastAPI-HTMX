@@ -11,7 +11,7 @@ GENERATE_HINT = 'python -c "import secrets; print(secrets.token_urlsafe(48))"'
 
 
 def validate_auth_secret(value: str | None) -> str:
-    """Return the secret, or raise RuntimeError without echoing the value."""
+    """Return the stripped secret, or raise RuntimeError without echoing the value."""
     stripped = (value or "").strip()
     if (
         not stripped
@@ -23,7 +23,7 @@ def validate_auth_secret(value: str | None) -> str:
             f"{MIN_AUTH_SECRET_LENGTH} characters. Set a long random value in "
             f".env, for example: {GENERATE_HINT}"
         )
-    return value
+    return stripped
 
 
 class AuthSettings(BaseSettings):

@@ -1,10 +1,14 @@
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class CsrfSettings(BaseSettings):
     secret_key: str = Field(validation_alias="CSRF_SECRET_KEY")
-    cookie_samesite: str = Field(validation_alias="COOKIE_SAMESITE")
+    cookie_samesite: Literal["lax", "strict", "none"] = Field(
+        validation_alias="COOKIE_SAMESITE"
+    )
     cookie_secure: bool = Field(validation_alias="COOKIE_SECURE")
 
     model_config = SettingsConfigDict(

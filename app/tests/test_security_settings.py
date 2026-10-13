@@ -1,5 +1,4 @@
 import importlib
-import sys
 
 import pytest
 from loguru import logger
@@ -38,6 +37,7 @@ def test_bad_secret_raises(bad):
 def test_real_secret_passes():
     assert validate_auth_secret(REAL_SECRET) == REAL_SECRET
     assert validate_auth_secret("x" * 32) == "x" * 32
+    assert validate_auth_secret(f"  {REAL_SECRET}\n") == REAL_SECRET
 
 
 def test_get_auth_secret_reads_env_and_rejects_placeholder(monkeypatch):
@@ -155,8 +155,6 @@ async def test_startup_creates_no_default_superuser(db_session):
     await on_startup()
     after = await count()
     assert after == before
-    if before == 0:
-        assert after == 0
 
 
 async def test_lookup_is_case_insensitive(clean_users):
@@ -201,12 +199,6 @@ def test_bad_secret_makes_security_import_fail(monkeypatch):
     import app.database.security as security
 
     monkeypatch.setenv("AUTH_SECRET", "change-me-auth-secret")
-    try:
-        with pytest.raises(RuntimeError, match="AUTH_SECRET"):
-            importlib.reload(security)
-    finally:
-        monkeypatch.setenv("AUTH_SECRET", REAL_SECRET)
-        # A failed reload leaves the module object in place; reload it with a
-        # good secret so later tests see a working module.
-        sys.modules["app.database.security"] = security
+    # A failed reload rebinds nothing: the module keeps its auth objects
+    with pytest.raises(RuntimeError, match="AUTH_SECRET"):
         importlib.reload(security)
