@@ -54,8 +54,8 @@
         </div>
         <div>
           <label for="phone" class="block mb-2.5 text-sm font-medium text-heading">Phone number:</label>
-          <input type="text" id="phone" name="phone" value="{{ user.profile.phone }}" aria-describedby="helper-text-explanation" pattern="^(\+?1?\s*?\(?\d{3}[\)\-\s]?\d{3}[\-\s]?\d{4}|\+?\d{2}?\s?\d{4}\s?\d{6})$" placeholder="USA: (123) 456-7890 or UK: 01234 567890 or Australia: 0412 345 678" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
-          <p id="helper-text-explanation" class="mt-2.5 text-sm text-body">Select a phone number that matches the format.</p>
+          <input type="text" id="phone" name="phone" value="{{ user.profile.phone }}" aria-describedby="helper-text-explanation" pattern="\+?[0-9 \(\)\-]{7,15}" maxlength="15" placeholder="USA: (123) 456-7890 or UK: 01234 567890 or Australia: 0412 345 678" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <p id="helper-text-explanation" class="mt-2.5 text-sm text-body">Digits, spaces, parentheses and hyphens, with an optional leading +.</p>
         </div>
         <div>
           <label for="company" class="block mb-2.5 text-sm font-medium text-heading">Company</label>

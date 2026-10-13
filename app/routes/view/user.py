@@ -261,7 +261,7 @@ async def post_update_user(
                     {
                         "showAlert": {
                             "type": "updated",
-                            "message": f"Profile for {profile_data.first_name , profile_data.last_name} updated successfully.",
+                            "message": f"Profile for {profile_data.first_name} {profile_data.last_name} updated successfully.",
                             "source": "user-page",
                         },
                     }
@@ -293,7 +293,7 @@ async def post_update_user(
                     {
                         "showAlert": {
                             "type": "updated",
-                            "message": f"Profile for {profile_data.first_name , profile_data.last_name} updated successfully.",
+                            "message": f"Profile for {profile_data.first_name} {profile_data.last_name} updated successfully.",
                             "source": "user-page",
                         },
                     }

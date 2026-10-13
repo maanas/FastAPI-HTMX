@@ -34,7 +34,7 @@ async def get_dashboard(
         {
             "request": request,
             "title": "FastAPI-HTMX",
-            "message": f"Welcome to FastAPI-HTMX!{user.email}",
+            "message": f"Welcome to FastAPI-HTMX! {user.email}",
             "cookie_value": cookie_value,
             "csrf_token": csrf_token,
             "user_type": user.is_superuser,
