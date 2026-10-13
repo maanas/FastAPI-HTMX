@@ -43,4 +43,4 @@ def handle_error(
 
     context["error_messages"] = error_messages
     logger.info(error_messages)
-    return templates.TemplateResponse(template, context)
+    return templates.TemplateResponse(context["request"], template, context)

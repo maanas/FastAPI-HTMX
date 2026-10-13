@@ -31,7 +31,9 @@ def pydantic_partial(
             field: FieldInfo, default: Any = None
         ) -> tuple[Any, FieldInfo]:
             new = deepcopy(field)
-            new.default = default
+            # pydantic 2.12+ rejects default plus default_factory: keep the factory
+            if new.default_factory is None:
+                new.default = default
             new.annotation = Optional[field.annotation]
             return new.annotation, new
 

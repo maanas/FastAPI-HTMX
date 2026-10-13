@@ -31,6 +31,7 @@ async def get_upload_file(
         raise HTTPException(status_code=403, detail="Not authorized to upload files")
     try:
         return templates.TemplateResponse(
+            request,
             "pages/upload.html",
             {
                 "request": request,
@@ -121,6 +122,7 @@ async def get_uploaded_files(
         if not hasattr(files, "__iter__"):
             files = [files]
         return templates.TemplateResponse(
+            request,
             "partials/upload/files_table.html",
             {
                 "request": request,

@@ -24,6 +24,7 @@ async def get_dashboard(
     cookies = request.cookies
     cookie_value = cookies.get("fastapiusersauth")
     response = templates.TemplateResponse(
+        request,
         "pages/dashboard.html",
         {
             "request": request,
@@ -70,7 +71,7 @@ async def get_login(
         "csrf_token": csrf_token,
     }
 
-    response = templates.TemplateResponse("pages/login.html", context)
+    response = templates.TemplateResponse(request, "pages/login.html", context)
 
     csrf_protect.set_csrf_cookie(signed_token, response)
     return response
@@ -90,4 +91,4 @@ async def get_register(
         "request": request,
         "current_page": current_page,
     }
-    return templates.TemplateResponse("pages/register.html", context)
+    return templates.TemplateResponse(request, "pages/register.html", context)

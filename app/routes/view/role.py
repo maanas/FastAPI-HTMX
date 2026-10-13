@@ -42,6 +42,7 @@ async def get_role(
         roles = await role_crud.read_all(db, skip, limit)
         csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
         response = templates.TemplateResponse(
+            request,
             "pages/role.html",
             {
                 "request": request,
@@ -74,6 +75,7 @@ async def get_create_roles(
 
         csrf_token = request.headers.get("X-CSRF-Token")
         response = templates.TemplateResponse(
+            request,
             "partials/role/add_role.html",
             {
                 "request": request,
@@ -184,6 +186,7 @@ async def get_role_by_id(
         csrf_token = request.headers.get("X-CSRF-Token")
 
         response = templates.TemplateResponse(
+            request,
             "partials/role/edit_role.html",
             {
                 "request": request,
