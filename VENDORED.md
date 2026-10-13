@@ -1,6 +1,6 @@
 # Vendored files
 
-Every script and stylesheet the pages load is a pinned file under `app/static/vendor/` (plus `app/static/js/htmx.min.js`); nothing loads from another origin.
+Every script and stylesheet the pages load is a pinned file under `app/static/vendor/`; nothing loads from another origin.
 
 ## Updating a file
 
@@ -18,4 +18,4 @@ Every script and stylesheet the pages load is a pinned file under `app/static/ve
 | Alpine.js | 3.17.4 | `app/static/vendor/alpinejs/alpine.min.js` | https://registry.npmjs.org/alpinejs/-/alpinejs-3.17.4.tgz (`dist/cdn.min.js`) | MIT | `232519394c6c8fdba6f362b1d9da16106db513cdbf899011f00daab4051df31c` | |
 | hyperscript | 0.9.11 | `app/static/vendor/hyperscript/hyperscript.min.js` | https://registry.npmjs.org/hyperscript.org/-/hyperscript.org-0.9.11.tgz (`dist/_hyperscript.min.js`, the package `main`, what unpkg serves) | BSD-2-Clause | `9e63e5162f36c11d8621ab025251a7e28eb421266f1cb10e2b4dcbbbb91a7d1e` | TEMPORARY: removed by the "Hyperscript out" item in TODO.md |
 | Flowbite CSS | 1.8.1 | `app/static/vendor/flowbite/flowbite-1.8.1.min.css` | https://registry.npmjs.org/flowbite/-/flowbite-1.8.1.tgz (`dist/flowbite.min.css`) | MIT | `3160d1aead8785eabca7e23e810460543c7c94b2659d518f7f04c1b3d066a7d3` | TEMPORARY: markup is still Flowbite 1.x; replaced by the Tailwind v4 build in the "CSS build" item in TODO.md |
-| htmx | 1.9.6 | `app/static/js/htmx.min.js` | committed by upstream, origin not verified | BSD-2-Clause (htmx licence, not checked against a tarball) | `cbb723c305cf6d6315c890909815523588509e2e092a59f8cfc4a885829689d5` | Version read from the file header; upgrade to 2.x is the next step |
+| htmx | 2.0.11 | `app/static/vendor/htmx/htmx.min.js` | https://registry.npmjs.org/htmx.org/-/htmx.org-2.0.11.tgz (`dist/htmx.min.js`; newest 2.x, `latest`; dist-tag `next` is 4.0.0) | 0BSD | `d6fdc75f204e6bdefa99b69bf1e6d4ac69b8a364f77929f45c13476b4000f717` | Tarball sha512 verified against `dist.integrity` |

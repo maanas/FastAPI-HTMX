@@ -1,6 +1,5 @@
 import json
 import uuid
-from urllib.parse import parse_qs, unquote_plus
 
 import nh3
 from fastapi import Depends, HTTPException, Request, Response
@@ -305,11 +304,8 @@ async def delete_group(
     try:
         await csrf_protect.validate_csrf(request)
 
-        extra_info = await request.body()
-
-        parsed_values = parse_qs(unquote_plus(extra_info.decode()))
-
-        group_name = parsed_values["group_name"][0]
+        # htmx 2 sends DELETE values (hx-vals) in the query string, not in a body
+        group_name = request.query_params["group_name"]
 
         # checking the current user as super user
         if not current_user.is_superuser:
