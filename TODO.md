@@ -57,10 +57,14 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   `submitted_form`).
 - One retro proposal was applied with the "MinIO pass" task on 2026-10-14 (checker: run
   `alembic upgrade head` on the scratch database before creating the superuser).
+- Three retro proposals were applied with the "Housekeeping" task on 2026-10-14 (checker: never
+  test whether `.env` exists, every placeholder setting named, the CSRF token in the
+  `X-CSRF-Token` header for write routes; `commit`: message style from `git log main`).
 - A local MinIO server for a test: `minio/minio` is gone from Docker Hub and `quay.io/minio/minio`
   refuses anonymous pulls (both checked 2026-10-14); `cgr.dev/chainguard/minio:latest` works, the
   command is in the README. The image is still on the Mac Pro, the container is removed.
-- Next: "Housekeeping".
+- Pull requests #11 to #13 are merged (2026-10-14). "Housekeeping" is on `chore/housekeeping`.
+- Next: the `Permission` type.
 
 ## Change list
 
@@ -215,7 +219,7 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - The local `users.db` holds no user (checked 2026-10-13), so the old default superuser is
     gone. It was made by the test fixture's `create_all` and has no `alembic_version` table:
     delete it and run `alembic upgrade head` before starting the app. The fixture writes to the
-    configured database; a separate test database would stop that.
+    configured database; a separate test database would stop that (done in "Housekeeping").
   - `setup.ps1` now generates a random secret; that edit was never run (no PowerShell here).
   - The `/users` API router is used by no template or script. Decide whether it stays mounted.
   - The login and register forms showed nothing on a 403 (an expired CSRF cookie): fixed in the
@@ -276,17 +280,27 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - With several worker processes, two first uploads at once can both try to create the bucket;
     the loser answers 503 once.
   - `MinioClient.create_bucket` is unused now. The date column shows `14-10-2026` with no time.
-- [ ] **Housekeeping**: static and template paths relative to the package (today relative to the
-  working directory), a LICENSE file (the README says MIT, the repo has none: ask upstream or
-  state it for our changes), the 49 existing ruff findings, sqlalchemy 2.1 once
-  fastapi-users-db-sqlalchemy allows it (held at 2.0.54), `setup.ps1` and the Windows path
-  in the README (`setup.ps1` still calls poetry and the old migration flow), `@app.on_event` to a
-  lifespan handler, a fixture that refuses to run the tests against a real database (255 tests
-  today; they create missing tables in the `DATABASE_URL` database).
-  From the template task: `pydantic_partial` in `app/schema/pydantic_base.py` drops model
-  validators, so `FileBase.validate_file_size` never runs (the upload route enforces 10 MB
-  itself); `nh3.clean` stores `&` as `&amp;`, which autoescape then shows doubled; the route path
-  `/post_update_group{group_id}` has no slash; `print()` in `group.py:536`; a missing `group_desc` is stored as the text "None".
+- [x] **Housekeeping** (2026-10-14, branch `chore/housekeeping`): templates, static files, the
+  Alembic location and the settings' `.env` resolve from the package, so the app runs from any
+  directory (`test_working_directory.py` starts it from another one); `@app.on_event` is a
+  lifespan handler. The suite builds its own throwaway SQLite database from the migrations in
+  `app/tests/conftest.py` and refuses to run on the `DATABASE_URL` database (605 tests). `uvx ruff
+  check .` is at 0 (`.claude` excluded). Form text goes through `clean_text`
+  (`app/core/text.py`): tags stripped, stored as typed, escaped once on output; every sink was
+  checked (templates, `x-text` alerts, `json.dumps` headers, the download header, the object
+  name). `pydantic_partial` keeps the source model's validators; `/post_update_group/{group_id}`
+  has its slash; the `print()` is gone; a missing `group_desc` is NULL. `setup.ps1` is rewritten
+  for uv; LICENSE is MIT for the fork's changes (owner's decision), the README says the upstream
+  code's license is as upstream states it (MIT in its README, no file).
+  Left open by it:
+  - `setup.ps1` was never run (no PowerShell on the Mac Pro): run it once on Windows.
+  - sqlalchemy 2.1: still blocked, fastapi-users-db-sqlalchemy 7.0.0 needs `<2.1.0` (checked
+    2026-10-14).
+  - A relative SQLite path in `DATABASE_URL` (the `.env.example` default) still follows the
+    directory the app starts from.
+  - `user.py` builds `role_id` as a one-element tuple (`(nh3.clean(...),)`, about line 255).
+  - The conftest error path for a failed `alembic upgrade head` was never triggered in a run.
+  - Ask upstream to add the MIT LICENSE their README claims (an issue for maanas to open).
 - [ ] **`Permission` type** (`app/models/groups.py`): it subclasses `sqlalchemy.Enum` with no
   values, so `group.permission` is an unconstrained string and would fail on Postgres as a native
   enum. Make it a Python `enum.Enum` or a plain string, with its own migration (`0002_...`).
