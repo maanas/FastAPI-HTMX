@@ -16,8 +16,10 @@ class SQLAlchemyCRUD(Generic[ModelType]):
     A generic class for performing common database operations using SQLAlchemy.
 
     Args:
-        db_model (Type[ModelType]): The SQLAlchemy model class to be used for database operations.
-        related_models (Optional[Dict[Type[Base], str]]): A dictionary of related SQLAlchemy model classes
+        db_model (Type[ModelType]): The SQLAlchemy model class to be used for
+            database operations.
+        related_models (Optional[Dict[Type[Base], str]]): A dictionary of
+            related SQLAlchemy model classes
         and the relationship attribute name to be used for JOIN queries.
               Example:
                 Suppose you have a `User` model and a related `Profile` model.
@@ -25,7 +27,9 @@ class SQLAlchemyCRUD(Generic[ModelType]):
                 you can pass the `related_models` dictionary as follows:
 
                 related_models = {
-                    Profile: "profile"  # Here, "profile" is the relationship attribute name in the `User` model
+                    # Here, "profile" is the relationship attribute name in the
+                    # `User` model
+                    Profile: "profile"
                 }
     """
 
@@ -67,8 +71,10 @@ class SQLAlchemyCRUD(Generic[ModelType]):
         Args:
             db (CurrentAsyncSession): The database session to be used for the operation.
             skip (int, optional): The number of records to skip. Defaults to 0.
-            limit (int, optional): The maximum number of records to return. Defaults to 0 (no limit).
-            join_relationships (bool, optional): Whether to JOIN related tables. Defaults to False.
+            limit (int, optional): The maximum number of records to return.
+                Defaults to 0 (no limit).
+            join_relationships (bool, optional): Whether to JOIN related
+                tables. Defaults to False.
 
         Returns:
             List[ModelType]: A list of database records.
@@ -102,7 +108,8 @@ class SQLAlchemyCRUD(Generic[ModelType]):
         Args:
             db (CurrentAsyncSession): The database session to be used for the operation.
             id (uuid.UUID): The primary key of the record to be retrieved.
-            join_relationships (bool, optional): Whether to JOIN related tables. Defaults to False.
+            join_relationships (bool, optional): Whether to JOIN related
+                tables. Defaults to False.
 
         Returns:
             ModelType: The retrieved database record.
@@ -214,7 +221,8 @@ class SQLAlchemyCRUD(Generic[ModelType]):
             id (uuid.UUID): The primary key of the record to be deleted.
 
         Returns:
-            bool: True if the record was deleted, False if the record could not be found.
+            bool: True if the record was deleted, False if the record could
+                not be found.
         """
         stmt = select(self.db_model).where(self.db_model.id == id)
         query = await db.execute(stmt)

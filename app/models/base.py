@@ -1,14 +1,14 @@
 import uuid
 from datetime import datetime
 
-UUID = uuid.uuid4
-
 # from fastapi import Depends
 from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql.functions import func
 
 from app.database.base import Base
+
+UUID = uuid.uuid4
 
 
 class BaseSQLModel(Base):

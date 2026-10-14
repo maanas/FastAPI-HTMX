@@ -256,7 +256,8 @@ async def post_create_group(
 
         form = await request.form()
 
-        # Iterate over the form fields and sanitize the values before validating against the Pydantic model
+        # Iterate over the form fields and sanitize the values before validating against
+        # the Pydantic model
         group_create = GroupCreate(
             group_name=nh3.clean(str(form.get("group_name"))),
             group_desc=nh3.clean(str(form.get("group_desc"))),
@@ -328,7 +329,8 @@ async def post_update_group(
 
         form = await request.form()
 
-        # Iterate over the form fields and sanitize the values before validating against the Pydantic model
+        # Iterate over the form fields and sanitize the values before validating against
+        # the Pydantic model
         group_update = GroupCreate(
             group_name=nh3.clean(str(form.get("group_name"))),
             group_desc=nh3.clean(str(form.get("group_desc"))),

@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     minio_access_key: str = Field(alias="MINIO_ACCESS_KEY")
     minio_secret_key: str = Field(alias="MINIO_SECRET_KEY")
     minio_bucket: str = Field(alias="MINIO_BUCKET")
-    # Should be kept True for production to enforce HTTPS connections to the MinIO server.
+    # Should be kept True for production to enforce HTTPS connections to the MinIO
+    # server.
     minio_secure: bool = Field(alias="MINIO_SECURE", default=False)
 
     model_config = SettingsConfigDict(

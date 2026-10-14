@@ -146,7 +146,8 @@ async def post_create_roles(
 
         form = await request.form()
 
-        # Iterate over the form fields and sanitize the values before validating against the Pydantic model
+        # Iterate over the form fields and sanitize the values before validating against
+        # the Pydantic model
         role_create = RoleCreate(
             role_name=nh3.clean(str(form.get("role_name"))),
             role_desc=nh3.clean(str(form.get("role_desc"))),
@@ -266,7 +267,8 @@ async def post_update_role(
 
         form = await request.form()
 
-        # Iterate over the form fields and sanitize the values before validating against the Pydantic model
+        # Iterate over the form fields and sanitize the values before validating against
+        # the Pydantic model
         role_update = RoleCreate(
             role_name=nh3.clean(str(form.get("role_name"))),
             role_desc=nh3.clean(str(form.get("role_desc"))),

@@ -17,7 +17,8 @@ from app.templates import templates
 login_view_route = APIRouter()
 
 
-# Defining a route to navigate to the dashboard page using the current_active_user dependency
+# Defining a route to navigate to the dashboard page using the current_active_user
+# dependency
 @login_view_route.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard(
     request: Request,

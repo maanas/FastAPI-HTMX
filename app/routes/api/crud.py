@@ -134,7 +134,9 @@ class BaseCRUD(Generic[ModelType, PydanticCreateModelType, PydanticUpdateModelTy
 #     return crud.read(id)
 
 # @app.put("/update/{model_name}/{id}")
-# def update(model_name: str, id: int, data: Dict[str, Any], db: Session = Depends(get_db)):
+# def update(
+#     model_name: str, id: int, data: Dict[str, Any], db: Session = Depends(get_db)
+# ):
 #     model = globals()[model_name]
 #     crud = BaseCRUD(model, db)
 #     return crud.update(id, data)

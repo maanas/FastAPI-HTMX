@@ -20,7 +20,8 @@ def test_create_invalid_roles():
 
 
 def test_create_roles_with_long_inputs():
-    # Test invalid input where role_name is more than 50 characters and role_desc is more than 200
+    # Test invalid input where role_name is more than 50 characters and role_desc is
+    # more than 200
     with pytest.raises(ValidationError):
         RoleCreate(role_name="a" * 51, role_desc="Role description")
     with pytest.raises(ValidationError):

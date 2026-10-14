@@ -57,13 +57,16 @@ async def get_users(
 
     Args:
         request (Request): The request object.
-        current_user (UserModelDB): The current user object obtained from the current_active_user dependency.
+        current_user (UserModelDB): The current user object obtained from the
+            current_active_user dependency.
 
     Returns:
-        TemplateResponse: The HTML response containing the "partials/add_user.html" template.
+        TemplateResponse: The HTML response containing the
+            "partials/add_user.html" template.
 
     Raises:
-        HTTPException: If the current user is not a superuser, with a 403 Forbidden status code.
+        HTTPException: If the current user is not a superuser, with a 403
+            Forbidden status code.
     """
     try:
         if not current_user.is_superuser:
@@ -122,13 +125,15 @@ async def get_create_users(
 
     Args:
         request (Request): The incoming HTTP request object.
-        current_user (UserModelDB): The currently authenticated user object, obtained from the current_active_user dependency.
+        current_user (UserModelDB): The currently authenticated user object,
+            obtained from the current_active_user dependency.
 
     Returns:
         TemplateResponse: The rendered HTML template for creating a new user.
 
     Raises:
-        HTTPException: If the current user is not a superuser, with a 403 Forbidden status code and a detail message.
+        HTTPException: If the current user is not a superuser, with a 403
+            Forbidden status code and a detail message.
     """
     # checking the current user as super user
     try:
@@ -252,7 +257,8 @@ async def post_update_user(
             raise HTTPException(
                 status_code=422, detail="Date of birth or role is not valid"
             )
-        # Iterate over the form fields and sanitize the values before validating against the Pydantic model
+        # Iterate over the form fields and sanitize the values before validating against
+        # the Pydantic model
         profile_data = ProfileUpdate(
             first_name=nh3.clean(str(form.get("first_name"))),
             last_name=nh3.clean(str(form.get("last_name"))),
@@ -290,7 +296,10 @@ async def post_update_user(
                     {
                         "showAlert": {
                             "type": "updated",
-                            "message": f"Profile for {profile_data.first_name} {profile_data.last_name} updated successfully.",
+                            "message": (
+                                f"Profile for {profile_data.first_name} "
+                                f"{profile_data.last_name} updated successfully."
+                            ),
                             "source": "user-page",
                         },
                     }
@@ -315,7 +324,10 @@ async def post_update_user(
                     {
                         "showAlert": {
                             "type": "updated",
-                            "message": f"Profile for {profile_data.first_name} {profile_data.last_name} updated successfully.",
+                            "message": (
+                                f"Profile for {profile_data.first_name} "
+                                f"{profile_data.last_name} updated successfully."
+                            ),
                             "source": "user-page",
                         },
                     }
