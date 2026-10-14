@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Any, Callable, Optional, Type, TypeVar
 
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, create_model, field_validator, model_validator
 from pydantic.fields import FieldInfo
 
 Model = TypeVar("Model", bound=Type[BaseModel])
@@ -40,9 +40,26 @@ def pydantic_partial(
         if exclude_fields:
             base_model = BaseModel
 
+        # A model built on `BaseModel` has none of the source model's validators;
+        # rebuild them on it (a validator on an excluded field is skipped, not an error)
+        validators: dict[str, Any] = {}
+        decorators = model.__pydantic_decorators__
+        for name, dec in decorators.field_validators.items():
+            validators[name] = field_validator(
+                *dec.info.fields,
+                mode=dec.info.mode,
+                check_fields=False,
+            )(getattr(dec.func, "__func__", dec.func))
+        for name, dec in decorators.model_validators.items():
+            func = getattr(dec.func, "__func__", dec.func)
+            if dec.info.mode != "after":
+                func = classmethod(func)
+            validators[name] = model_validator(mode=dec.info.mode)(func)
+
         return create_model(
             model.__name__,
             __base__=base_model,
+            __validators__=validators if exclude_fields else None,
             __module__=model.__module__,
             **{
                 field_name: make_field_optional(field_info)

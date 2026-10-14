@@ -1,7 +1,7 @@
 from typing import Optional
 
 import pytest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from ..schema.pydantic_base import pydantic_partial
 
@@ -117,3 +117,48 @@ class TestPartialModel:
         # Act & Assert
         with pytest.raises(TypeError):
             pydantic_partial()(MyModel)
+
+
+class TestPartialKeepsValidators:
+    def test_field_validator_runs_on_the_partial(self):
+        class MyModel(BaseModel):
+            size: int
+            other: int
+
+            @field_validator("size")
+            @classmethod
+            def positive(cls, v):
+                if v <= 0:
+                    raise ValueError("must be positive")
+                return v
+
+        partial = pydantic_partial(exclude_fields=["other"])(MyModel)
+        with pytest.raises(ValidationError):
+            partial(size=-1)
+        assert partial(size=3).size == 3
+        assert partial().size is None
+
+    def test_model_validator_runs_on_the_partial(self):
+        class MyModel(BaseModel):
+            a: int
+            b: int
+            c: int
+
+            @model_validator(mode="after")
+            def a_below_b(self):
+                if self.a is not None and self.b is not None and self.a >= self.b:
+                    raise ValueError("a must be below b")
+                return self
+
+        partial = pydantic_partial(exclude_fields=["c"])(MyModel)
+        with pytest.raises(ValidationError):
+            partial(a=5, b=1)
+        assert partial(a=1, b=5).b == 5
+
+    def test_upload_schema_refuses_a_file_over_10_mb(self):
+        from ..schema.uploads import FileCreate
+
+        base = {"name": "report.pdf", "unique_name": "abc.pdf", "file_type": "x/y"}
+        with pytest.raises(ValidationError):
+            FileCreate(**base, source="s", file_size=10_000_001)
+        assert FileCreate(**base, source="s", file_size=10).file_size == 10

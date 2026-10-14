@@ -2,13 +2,13 @@
 import json
 import uuid
 
-import nh3
 from fastapi import Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRouter
 from fastapi_csrf_protect import CsrfProtect
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 
+from app.core.text import clean_text
 from app.database.db import CurrentAsyncSession
 from app.database.security import current_active_user
 from app.models.users import Role as RoleModelDB
@@ -149,8 +149,8 @@ async def post_create_roles(
         # Iterate over the form fields and sanitize the values before validating against
         # the Pydantic model
         role_create = RoleCreate(
-            role_name=nh3.clean(str(form.get("role_name"))),
-            role_desc=nh3.clean(str(form.get("role_desc"))),
+            role_name=clean_text(form.get("role_name")),
+            role_desc=clean_text(form.get("role_desc")),
         )
 
         existing_role = await role_crud.read_by_column(
@@ -270,8 +270,8 @@ async def post_update_role(
         # Iterate over the form fields and sanitize the values before validating against
         # the Pydantic model
         role_update = RoleCreate(
-            role_name=nh3.clean(str(form.get("role_name"))),
-            role_desc=nh3.clean(str(form.get("role_desc"))),
+            role_name=clean_text(form.get("role_name")),
+            role_desc=clean_text(form.get("role_desc")),
         )
 
         # Reject a name another role has: a unique violation would leave the

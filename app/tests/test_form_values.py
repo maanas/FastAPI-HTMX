@@ -272,7 +272,7 @@ async def test_the_group_edit_form_shows_the_submitted_values_not_the_stored_one
     response = await send(
         client,
         "put",
-        f"/post_update_group{stored_group.id}",
+        f"/post_update_group/{stored_group.id}",
         {"group_name": "x", "group_desc": TRICKY},
         token,
     )
@@ -416,7 +416,7 @@ DISTINCT = {
     "method, path",
     [
         ("put", "/post_update_role/{role}"),
-        ("put", "/post_update_group{group}"),
+        ("put", "/post_update_group/{group}"),
         ("post", "/post_group_user_link/{group}"),
         ("put", "/post_update_user/{user}"),
     ],

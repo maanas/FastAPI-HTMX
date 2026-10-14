@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRouter
 from fastapi_csrf_protect import CsrfProtect
 
+from app.core.text import clean_text
 from app.database.db import CurrentAsyncSession
 from app.database.security import current_active_user
 from app.models.users import Role as RoleModelDB
@@ -260,15 +261,15 @@ async def post_update_user(
         # Iterate over the form fields and sanitize the values before validating against
         # the Pydantic model
         profile_data = ProfileUpdate(
-            first_name=nh3.clean(str(form.get("first_name"))),
-            last_name=nh3.clean(str(form.get("last_name"))),
-            gender=nh3.clean(str(form.get("gender"))),
+            first_name=clean_text(form.get("first_name")),
+            last_name=clean_text(form.get("last_name")),
+            gender=clean_text(form.get("gender")),
             date_of_birth=date_of_birth,
-            address=nh3.clean(str(form.get("address"))),
-            city=nh3.clean(str(form.get("city"))),
-            country=nh3.clean(str(form.get("country"))),
-            phone=nh3.clean(str(form.get("phone"))),
-            company=nh3.clean(str(form.get("company"))),
+            address=clean_text(form.get("address")),
+            city=clean_text(form.get("city")),
+            country=clean_text(form.get("country")),
+            phone=clean_text(form.get("phone")),
+            company=clean_text(form.get("company")),
         )
 
         if role_id is None:

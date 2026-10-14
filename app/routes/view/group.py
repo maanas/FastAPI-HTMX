@@ -9,6 +9,7 @@ from fastapi_csrf_protect import CsrfProtect
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 from sqlalchemy import select
 
+from app.core.text import clean_text
 from app.database.db import CurrentAsyncSession
 from app.database.security import current_active_user
 from app.models.groups import Group as GroupModelDB
@@ -259,8 +260,8 @@ async def post_create_group(
         # Iterate over the form fields and sanitize the values before validating against
         # the Pydantic model
         group_create = GroupCreate(
-            group_name=nh3.clean(str(form.get("group_name"))),
-            group_desc=nh3.clean(str(form.get("group_desc"))),
+            group_name=clean_text(form.get("group_name")),
+            group_desc=clean_text(form.get("group_desc")) or None,
         )
 
         existing_group = await group_crud.read_by_column(
@@ -307,7 +308,7 @@ async def post_create_group(
 
 
 # Route to update a group
-@group_view_route.put("/post_update_group{group_id}", response_class=HTMLResponse)
+@group_view_route.put("/post_update_group/{group_id}", response_class=HTMLResponse)
 async def post_update_group(
     request: Request,
     response: Response,
@@ -332,8 +333,8 @@ async def post_update_group(
         # Iterate over the form fields and sanitize the values before validating against
         # the Pydantic model
         group_update = GroupCreate(
-            group_name=nh3.clean(str(form.get("group_name"))),
-            group_desc=nh3.clean(str(form.get("group_desc"))),
+            group_name=clean_text(form.get("group_name")),
+            group_desc=clean_text(form.get("group_desc")) or None,
         )
 
         # Reject a name another group has: a unique violation would leave the
@@ -557,9 +558,7 @@ async def post_group_user_link(
                     group_id=group_id, user_id=user_id
                 )
             )
-            if existing_record:
-                print(f"Record with {user_id} already exists")
-            else:
+            if not existing_record:
                 db_data.append(
                     group_user_link.model_dump(exclude={"id"}, exclude_unset=True)
                 )

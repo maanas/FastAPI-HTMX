@@ -56,7 +56,7 @@ class FileBase(BaseModel):
 
     @field_validator("file_size")
     def validate_file_size(cls, v):
-        if v == "":
+        if v is None or v == "":
             return None
         elif v < 0 or v == 0:
             raise ValueError("File size cannot be zero")
