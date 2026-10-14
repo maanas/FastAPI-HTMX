@@ -24,6 +24,9 @@
       <div x-show="isDeleted" x-transition:leave="transition ease-in duration-1000" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="p-4 mb-4 text-sm text-fg-danger-strong rounded-base bg-danger-soft" role="alert">
         <span class="font-medium" x-text="message"></span>
       </div>
+      <div x-show="isError" x-transition:leave="transition ease-in duration-1000" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="p-4 mb-4 text-sm text-fg-danger-strong rounded-base bg-danger-soft" role="alert">
+        <span class="font-medium" x-text="message"></span>
+      </div>
       <button
         type="button"
         id="group-button"

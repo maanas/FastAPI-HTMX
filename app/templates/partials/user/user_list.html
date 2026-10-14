@@ -24,6 +24,9 @@
       <div x-show="isDeleted" x-transition:leave="transition ease-in duration-1000" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="p-4 mb-4 text-sm text-fg-danger-strong rounded-base bg-danger-soft" role="alert">
         <span class="font-medium" x-text="message"></span>
       </div>
+      <div x-show="isError" x-transition:leave="transition ease-in duration-1000" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="p-4 mb-4 text-sm text-fg-danger-strong rounded-base bg-danger-soft" role="alert">
+        <span class="font-medium" x-text="message"></span>
+      </div>
       <div class="relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default">
         <table class="w-full text-sm text-left rtl:text-right text-body">
           <thead class="text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default">

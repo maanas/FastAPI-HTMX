@@ -12,6 +12,8 @@ from app.app import app
 from app.database.security import current_active_user
 from app.models.users import Role, User, UserProfile
 
+from .error_asserts import CSRF_MESSAGE, alert_message
+
 pytestmark = pytest.mark.anyio
 
 HX = {"HX-Request": "true"}
@@ -67,8 +69,8 @@ def assert_full_page(response):
     assert "HX-Request" in response.headers["vary"]
 
 
-def assert_fragment(response):
-    assert response.status_code == 200
+def assert_fragment(response, status=200):
+    assert response.status_code == status
     assert "<nav" not in response.text
     assert "<aside" not in response.text
     assert "<html" not in response.text
@@ -116,15 +118,17 @@ async def test_edit_form_page_and_fragment(client, logged_in, stored_user):
 async def test_error_response_follows_the_request_kind(client, logged_in):
     logged_in.is_superuser = False
     fragment = await client.get("/user", headers=HX)
-    assert_fragment(fragment)
+    assert_fragment(fragment, 403)
+    assert fragment.headers["X-Error-Rendered"] == "1"
     assert "Not authorized" in fragment.text
     page = await client.get("/user")
+    assert page.status_code == 403
     assert page.text.count("<nav") == 1
     assert "Not authorized" in page.text
     edit = await client.get(
         "/get_user/00000000-0000-0000-0000-000000000000", headers=HX
     )
-    assert_fragment(edit)
+    assert_fragment(edit, 403)
     assert "Not authorized" in edit.text
 
 
@@ -135,9 +139,8 @@ async def csrf_token_from(client):
 
 async def test_delete_needs_the_csrf_token(client, logged_in, stored_user, db_session):
     response = await client.delete(f"/delete_user/{stored_user.id}", headers=HX)
-    assert "HX-Location" not in response.headers
-    assert "<nav" not in response.text
-    assert "Missing Cookie: `fastapi-csrf-token`" in response.text
+    assert response.status_code == 403
+    assert alert_message(response) == CSRF_MESSAGE
     db_session.expire_all()
     found = await db_session.execute(select(User).where(User.email == EMAIL))
     assert found.scalar_one_or_none() is not None
@@ -168,8 +171,8 @@ async def test_delete_is_refused_for_a_regular_user(
         f"/delete_user/{stored_user.id}",
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert "HX-Location" not in response.headers
-    assert "Not authorized" in response.text
+    assert response.status_code == 403
+    assert "Not authorized" in alert_message(response)
     db_session.expire_all()
     found = await db_session.execute(select(User).where(User.email == EMAIL))
     assert found.scalar_one_or_none() is not None
@@ -184,8 +187,8 @@ async def test_superuser_cannot_delete_their_own_account(
         f"/delete_user/{stored_user.id}",
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert "HX-Location" not in response.headers
-    assert "cannot delete your own account" in response.text
+    assert response.status_code == 403
+    assert "cannot delete your own account" in alert_message(response)
     db_session.expire_all()
     found = await db_session.execute(select(User).where(User.email == EMAIL))
     assert found.scalar_one_or_none() is not None

@@ -16,8 +16,8 @@ from app.models.users import Role as UserRoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
 from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
-from app.routes.view.errors import handle_error
-from app.routes.view.fragments import render_view
+from app.routes.view.errors import alert_error, handle_error
+from app.routes.view.fragments import render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.group import GroupCreate
 from app.schema.group import GroupUserLink as GroupUserLinkCreate
@@ -260,7 +260,7 @@ async def post_create_group(
         )
 
         if name_is_taken(existing_group):
-            raise HTTPException(status_code=400, detail="Group name already exists")
+            raise HTTPException(status_code=409, detail="Group name already exists")
         await group_crud.create(dict(group_create), db)
 
         # Redirecting to the groups page upon successful group creation
@@ -330,7 +330,7 @@ async def post_update_group(
             db, "group_name", group_update.group_name
         )
         if name_is_taken(existing_group, group_id):
-            raise HTTPException(status_code=400, detail="Group name already exists")
+            raise HTTPException(status_code=409, detail="Group name already exists")
 
         await group_crud.update(db, group_id, dict(group_update))
 
@@ -403,6 +403,9 @@ async def delete_group(
 
         return response
     except Exception as e:
+        # The list stays; the refusal shows as an alert above it
+        if wants_fragment(request):
+            return alert_error(e, "group-page")
         csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = handle_error(
             "pages/groups.html",
@@ -512,7 +515,12 @@ async def post_group_user_link(
         selected_users = set(selected_list)
 
         # Refuse an id that is no user before anything is written
-        submitted = {uuid.UUID(str(user_id)) for user_id in all_users | selected_users}
+        try:
+            submitted = {
+                uuid.UUID(str(user_id)) for user_id in all_users | selected_users
+            }
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Unknown user selected")
         known = await db.execute(
             select(UserModelDB.id).where(UserModelDB.id.in_(submitted))
         )

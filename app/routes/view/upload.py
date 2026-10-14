@@ -17,8 +17,8 @@ from app.database.security import current_active_user
 from app.models.upload import Upload as UploadsModelDB
 from app.models.users import User as UserModelDB
 from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
-from app.routes.view.errors import handle_error
-from app.routes.view.fragments import render_view
+from app.routes.view.errors import alert_error, handle_error
+from app.routes.view.fragments import render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.uploads import FileCreate
 from app.templates import templates
@@ -205,7 +205,7 @@ async def post_upload_file(
                 raise HTTPException(status_code=400, detail="The file is empty")
             if file.size > MAX_FILE_SIZE:
                 raise HTTPException(
-                    status_code=400, detail="File size cannot be greater than 10 MB"
+                    status_code=413, detail="File size cannot be greater than 10 MB"
                 )
             # The extension becomes part of the object name and of a URL: letters and
             # digits only, and short enough for the unique_name column
@@ -383,6 +383,9 @@ async def delete_file(
     except Exception as e:
         # A failed delete leaves the session unusable; the error response reads no data
         await rollback(db, "delete")
+        # The table stays; the refusal shows as an alert above the form
+        if wants_fragment(request):
+            return alert_error(e, "upload-page")
         return handle_error(
             UPLOAD_RESULT,
             {"request": request, "user_type": is_superuser},

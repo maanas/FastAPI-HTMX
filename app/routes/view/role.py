@@ -13,8 +13,8 @@ from app.database.security import current_active_user
 from app.models.users import Role as RoleModelDB
 from app.models.users import User as UserModelDB
 from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
-from app.routes.view.errors import handle_error
-from app.routes.view.fragments import render_view
+from app.routes.view.errors import alert_error, handle_error
+from app.routes.view.fragments import render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.users import RoleCreate
 
@@ -151,7 +151,7 @@ async def post_create_roles(
         )
 
         if existing_role:
-            raise HTTPException(status_code=400, detail="Role name already exists")
+            raise HTTPException(status_code=409, detail="Role name already exists")
         await role_crud.create(dict(role_create), db)
 
         # Redirecting to the add role page upon successful role creation
@@ -269,7 +269,7 @@ async def post_update_role(
             db, "role_name", role_update.role_name
         )
         if existing_role and existing_role.id != role_id:
-            raise HTTPException(status_code=400, detail="Role name already exists")
+            raise HTTPException(status_code=409, detail="Role name already exists")
 
         await role_crud.update(db, role_id, dict(role_update))
 
@@ -346,6 +346,9 @@ async def delete_role(
 
         return response
     except Exception as e:
+        # The list stays; the refusal shows as an alert above it
+        if wants_fragment(request):
+            return alert_error(e, "role-page")
         csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = handle_error(
             "pages/role.html",

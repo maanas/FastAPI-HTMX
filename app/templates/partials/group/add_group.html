@@ -8,7 +8,6 @@
       hx-target="#dashboard-body"
       hx-post="{{ path_for('post_create_group') }}"
       hx-swap="outerHTML"
-      hx-push-url="true"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
     >
       <div class="mb-6">

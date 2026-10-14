@@ -20,6 +20,8 @@ from app.models.users import User
 from app.routes.view import upload as upload_routes
 from app.tests.template_rules import template_rule_violations
 
+from .error_asserts import CSRF_MESSAGE, alert_message
+
 pytestmark = pytest.mark.anyio
 
 HX = {"HX-Request": "true"}
@@ -157,8 +159,8 @@ def assert_full_page(response):
     assert "HX-Request" in response.headers["vary"]
 
 
-def assert_fragment(response, root=True):
-    assert response.status_code == 200
+def assert_fragment(response, root=True, status=200):
+    assert response.status_code == status
     assert "<nav" not in response.text
     assert "<aside" not in response.text
     assert "<html" not in response.text
@@ -205,12 +207,15 @@ async def test_files_table_is_a_fragment_for_every_request(
 async def test_error_response_follows_the_request_kind(client, logged_in):
     logged_in.is_superuser = False
     fragment = await client.get("/uploads", headers=HX)
-    assert_fragment(fragment, root=False)
+    assert_fragment(fragment, root=False, status=403)
+    assert fragment.headers["X-Error-Rendered"] == "1"
     assert "Not authorized" in fragment.text
     page = await client.get("/uploads")
+    assert page.status_code == 403
     assert page.text.count("<nav") == 1
     assert "Not authorized" in page.text
     table = await client.get("/get_uploaded_files", headers=HX)
+    assert table.status_code == 403
     assert "Not authorized" in table.text
     assert "<nav" not in table.text
 
@@ -251,7 +256,9 @@ async def test_upload_needs_the_csrf_token(
         files={"file": (FILE_NAME, b"hello", "text/plain")},
         headers=HX,
     )
-    assert "Missing Cookie: `fastapi-csrf-token`" in response.text
+    assert response.status_code == 403
+    assert response.headers["X-Error-Rendered"] == "1"
+    assert CSRF_MESSAGE in response.text
     assert "<nav" not in response.text
     assert fake_minio.objects == {}
     assert await stored_names(db_session, stored_user.id) == []
@@ -267,7 +274,7 @@ async def test_a_file_that_fails_validation_is_not_stored(
         files={"file": ("ab", b"hello", "text/plain")},
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert response.status_code == 200
+    assert response.status_code == 422
     assert "HX-Trigger" not in response.headers
     assert 'id="error-message"' in response.text
     assert "<nav" not in response.text
@@ -286,6 +293,7 @@ async def test_upload_is_refused_for_a_regular_user(
         files={"file": (FILE_NAME, b"hello", "text/plain")},
         headers={**HX, "X-CSRF-Token": token},
     )
+    assert response.status_code == 403
     assert "Not authorized" in response.text
     assert fake_minio.objects == {}
     assert await stored_names(db_session, stored_user.id) == []
@@ -296,8 +304,8 @@ async def test_delete_needs_the_csrf_token(
 ):
     row = await make_file(db_session, stored_user)
     response = await client.delete(f"/delete/{row.unique_name}", headers=HX)
-    assert "HX-Trigger" not in response.headers
-    assert "Missing Cookie: `fastapi-csrf-token`" in response.text
+    assert response.status_code == 403
+    assert alert_message(response) == CSRF_MESSAGE
     assert await stored_names(db_session, stored_user.id) == [FILE_NAME]
 
 
@@ -327,9 +335,8 @@ async def test_delete_of_an_unknown_file_is_an_error_message(
     response = await client.delete(
         "/delete/unknown.txt", headers={**HX, "X-CSRF-Token": token}
     )
-    assert response.status_code == 200
-    assert "HX-Trigger" not in response.headers
-    assert "File not found" in response.text
+    assert response.status_code == 404
+    assert alert_message(response) == "File not found"
 
 
 async def test_delete_is_refused_for_a_regular_user(
@@ -341,7 +348,8 @@ async def test_delete_is_refused_for_a_regular_user(
     response = await client.delete(
         f"/delete/{row.unique_name}", headers={**HX, "X-CSRF-Token": token}
     )
-    assert "Not authorized" in response.text
+    assert response.status_code == 403
+    assert "Not authorized" in alert_message(response)
     assert await stored_names(db_session, stored_user.id) == [FILE_NAME]
 
 
@@ -441,6 +449,7 @@ async def test_a_storage_error_string_is_an_error_and_writes_no_row(
     fake_minio.fail_upload = True
     token = await csrf_token_from(client)
     response = await post_file(client, token)
+    assert response.status_code == 503
     assert "HX-Trigger" not in response.headers
     assert STORAGE_UNAVAILABLE in response.text
     assert "Error occurred" not in response.text
@@ -521,14 +530,15 @@ async def test_a_wrong_csrf_token_is_refused_on_upload_and_delete(
         files={"file": (FILE_NAME, b"hello", "text/plain")},
         headers=wrong,
     )
+    assert uploaded.status_code == 403
     assert "HX-Trigger" not in uploaded.headers
-    assert "CSRF" in uploaded.text
+    assert CSRF_MESSAGE in uploaded.text
     assert fake_minio.objects == {}
     row = await make_file(db_session, stored_user)
     fake_minio.objects[row.unique_name] = b"hello"
     deleted = await client.delete(f"/delete/{row.unique_name}", headers=wrong)
-    assert "HX-Trigger" not in deleted.headers
-    assert "CSRF" in deleted.text
+    assert deleted.status_code == 403
+    assert alert_message(deleted) == CSRF_MESSAGE
     assert row.unique_name in fake_minio.objects
     assert await stored_names(db_session, stored_user.id) == [FILE_NAME]
 
@@ -543,12 +553,14 @@ async def test_user_a_cannot_delete_or_download_user_bs_file(
     deleted = await client.delete(
         f"/delete/{name}", headers={**HX, "X-CSRF-Token": token}
     )
-    assert "File not found" in deleted.text
-    assert "HX-Trigger" not in deleted.headers
+    assert deleted.status_code == 404
+    assert alert_message(deleted) == "File not found"
     downloaded = await client.get(f"/download/{name}")
+    assert downloaded.status_code == 404
     assert "File not found" in downloaded.text
     assert b"secret" not in downloaded.content
     unknown = await client.get("/download/unknown.txt")
+    assert unknown.status_code == 404
     assert "File not found" in unknown.text
     assert fake_minio.objects == {name: b"secret"}
     assert await stored_names(db_session, other_user.id) == [FILE_NAME]
@@ -594,9 +606,8 @@ async def test_a_storage_error_on_delete_keeps_the_row(
     response = await client.delete(
         f"/delete/{row.unique_name}", headers={**HX, "X-CSRF-Token": token}
     )
-    assert "HX-Trigger" not in response.headers
-    assert STORAGE_UNAVAILABLE in response.text
-    assert "Error occurred" not in response.text
+    assert response.status_code == 503
+    assert alert_message(response) == STORAGE_UNAVAILABLE
     assert await stored_names(db_session, stored_user.id) == [FILE_NAME]
 
 
@@ -706,11 +717,11 @@ async def test_a_delete_error_with_a_real_user_row_is_not_a_500(
     missing = await client.delete(
         "/delete/does-not-exist.txt", headers={**HX, "X-CSRF-Token": token}
     )
-    assert missing.status_code == 200
-    assert "File not found" in missing.text
+    assert missing.status_code == 404
+    assert alert_message(missing) == "File not found"
     no_token = await client.delete("/delete/does-not-exist.txt", headers=HX)
-    assert no_token.status_code == 200
-    assert "X-CSRF-Token" in no_token.text
+    assert no_token.status_code == 403
+    assert alert_message(no_token) == CSRF_MESSAGE
 
 
 async def test_a_failed_database_create_with_a_real_user_row_is_not_a_500(
@@ -722,8 +733,9 @@ async def test_a_failed_database_create_with_a_real_user_row_is_not_a_500(
     monkeypatch.setattr(upload_routes.upload_crud, "create", boom)
     token = await csrf_token_from(client)
     response = await post_file(client, token)
-    assert response.status_code == 200
+    assert response.status_code == 500
     assert 'id="error-message"' in response.text
+    assert "database is down" not in response.text
     assert fake_minio.objects == {}
     assert await stored_names(db_session, stored_user.id) == []
 
@@ -745,10 +757,12 @@ STORAGE_HOST_ERROR = ConnectionError(
 
 
 def assert_storage_unavailable(response):
-    assert response.status_code == 200
-    assert STORAGE_UNAVAILABLE in response.text
+    assert response.status_code == 503
+    # A form answer has the message in its body, a delete in its alert header
+    shown = response.text + response.headers.get("HX-Trigger", "")
+    assert STORAGE_UNAVAILABLE in shown
     for detail in ("minio.invalid", "19999", "throwaway-bucket", "Max retries"):
-        assert detail not in response.text
+        assert detail not in shown
 
 
 async def test_storage_connection_errors_show_only_the_fixed_message(
@@ -767,7 +781,7 @@ async def test_storage_connection_errors_show_only_the_fixed_message(
         f"/delete/{row.unique_name}", headers={**HX, "X-CSRF-Token": token}
     )
     assert_storage_unavailable(deleted)
-    assert "HX-Trigger" not in deleted.headers
+    assert alert_message(deleted) == STORAGE_UNAVAILABLE
     # The upload wrote no row and the delete removed none
     assert await stored_names(db_session, stored_user.id) == [FILE_NAME]
 

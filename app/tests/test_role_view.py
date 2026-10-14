@@ -13,6 +13,7 @@ from app.database.security import current_active_user
 from app.models.users import Role
 
 from .conftest import TEST_ROLE_PREFIX
+from .error_asserts import CSRF_MESSAGE, alert_message
 
 pytestmark = pytest.mark.anyio
 
@@ -55,8 +56,8 @@ def assert_full_page(response):
     assert "HX-Request" in response.headers["vary"]
 
 
-def assert_fragment(response):
-    assert response.status_code == 200
+def assert_fragment(response, status=200):
+    assert response.status_code == status
     assert "<nav" not in response.text
     assert "<aside" not in response.text
     assert "<html" not in response.text
@@ -112,9 +113,11 @@ async def test_error_response_follows_the_request_kind(client, logged_in):
     unknown = "/get_role/00000000-0000-0000-0000-000000000000"
     for url in ("/role", "/get_create_roles", unknown):
         fragment = await client.get(url, headers=HX)
-        assert_fragment(fragment)
+        assert_fragment(fragment, 403)
+        assert fragment.headers["X-Error-Rendered"] == "1"
         assert "Not authorized" in fragment.text
         page = await client.get(url)
+        assert page.status_code == 403
         assert page.text.count("<nav") == 1
         assert "Not authorized" in page.text
 
@@ -132,9 +135,9 @@ async def role_exists(db_session):
 
 async def test_delete_needs_the_csrf_token(client, logged_in, stored_role, db_session):
     response = await client.delete(f"/delete_role/{stored_role.id}", headers=HX)
+    assert response.status_code == 403
     assert "HX-Location" not in response.headers
-    assert "<nav" not in response.text
-    assert "Missing Cookie: `fastapi-csrf-token`" in response.text
+    assert alert_message(response) == CSRF_MESSAGE
     assert await role_exists(db_session)
 
 
@@ -167,8 +170,9 @@ async def test_delete_is_refused_for_a_regular_user(
         f"/delete_role/{stored_role.id}",
         headers={**HX, "X-CSRF-Token": token},
     )
+    assert response.status_code == 403
     assert "HX-Location" not in response.headers
-    assert "Not authorized" in response.text
+    assert "Not authorized" in alert_message(response)
     assert await role_exists(db_session)
 
 
@@ -207,7 +211,7 @@ async def test_rename_to_an_existing_name_is_an_error_not_a_500(
         data={"role_name": ROLE_NAME, "role_desc": "Another role"},
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert response.status_code == 200
+    assert response.status_code == 409
     assert "HX-Location" not in response.headers
     assert "already exists" in response.text
     assert 'id="edit-role-form"' in response.text

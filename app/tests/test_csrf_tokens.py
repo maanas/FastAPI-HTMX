@@ -28,8 +28,9 @@ ROLE_NAME = TEST_ROLE_PREFIX + "csrf-role"
 NEW_ROLE_NAME = TEST_ROLE_PREFIX + "csrf-new-role"
 GROUP_NAME = "pytest-csrf-group"
 USER_EMAIL = "pytest-csrf-user@example.com"
-# What validate_csrf and the template put in the answer when the check fails
-REFUSAL = ("Missing Cookie", "Bad headers", "CSRF signatures", "CSRF token")
+# What handle_error shows when the check fails: in the body of a form, in the
+# HX-Trigger alert of a delete
+REFUSAL = ("Your session has expired",)
 
 
 @pytest.fixture
@@ -86,7 +87,8 @@ def token_in(page):
 
 
 def refused(response):
-    return any(text in response.text for text in REFUSAL)
+    shown = response.text + response.headers.get("HX-Trigger", "")
+    return response.status_code == 403 and any(text in shown for text in REFUSAL)
 
 
 # Every form opened directly by its URL, as a full page: the URL, and the write

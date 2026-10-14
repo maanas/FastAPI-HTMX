@@ -471,7 +471,8 @@ def test_components_script_shows_every_login_and_register_failure():
 
 CSRF_COOKIE = "fastapi-csrf-token"
 ROLE_FORM = {"role_name": "pytest-rotate-role", "role_desc": "valid text"}
-REFUSAL = ("Missing Cookie", "Bad headers", "CSRF signatures", "CSRF token")
+# The fixed message handle_error shows for a failed CSRF check
+REFUSAL = ("Your session has expired",)
 
 
 def csrf_cookies(response):

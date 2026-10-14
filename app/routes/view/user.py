@@ -15,8 +15,8 @@ from app.models.users import Role as RoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
 from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
-from app.routes.view.errors import handle_error
-from app.routes.view.fragments import render_view
+from app.routes.view.errors import alert_error, handle_error
+from app.routes.view.fragments import render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.users import ProfileUpdate
 
@@ -238,25 +238,31 @@ async def post_update_user(
             raise HTTPException(status_code=403, detail="Not authorized to add users")
 
         form = await request.form()
+        # A malformed date or role id is the client's mistake, not a crash
+        try:
+            date_of_birth = (
+                datetime.strptime(nh3.clean(str(form.get("dob"))), "%Y-%m-%d")
+                if form.get("dob")
+                else None
+            )
+            role_id = (nh3.clean(str(form.get("role_id"))),)
+            role_id = uuid.UUID(role_id[0]) if role_id[0] else None
+        except ValueError:
+            raise HTTPException(
+                status_code=422, detail="Date of birth or role is not valid"
+            )
         # Iterate over the form fields and sanitize the values before validating against the Pydantic model
         profile_data = ProfileUpdate(
             first_name=nh3.clean(str(form.get("first_name"))),
             last_name=nh3.clean(str(form.get("last_name"))),
             gender=nh3.clean(str(form.get("gender"))),
-            date_of_birth=(
-                datetime.strptime(nh3.clean(str(form.get("dob"))), "%Y-%m-%d")
-                if form.get("dob")
-                else None
-            ),
+            date_of_birth=date_of_birth,
             address=nh3.clean(str(form.get("address"))),
             city=nh3.clean(str(form.get("city"))),
             country=nh3.clean(str(form.get("country"))),
             phone=nh3.clean(str(form.get("phone"))),
             company=nh3.clean(str(form.get("company"))),
         )
-
-        role_id = (nh3.clean(str(form.get("role_id"))),)
-        role_id = uuid.UUID(role_id[0]) if role_id[0] else None
 
         if role_id is None:
             raise HTTPException(
@@ -318,8 +324,17 @@ async def post_update_user(
 
             return response
     except Exception as e:
-        user = await user_crud.read_by_primary_key(db, user_id, join_relationships=True)
-        roles = await role_crud.read_all(db)
+        # A failed write leaves the session unusable: start over and read the form
+        # again; if that fails too, the response is the error alone.
+        user, roles = None, []
+        try:
+            await db.rollback()
+            user = await user_crud.read_by_primary_key(
+                db, user_id, join_relationships=True
+            )
+            roles = await role_crud.read_all(db)
+        except Exception:
+            pass
         csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = handle_error(
             "pages/user_edit.html",
@@ -355,7 +370,7 @@ async def delete_user(
 
         if user_id == current_user.id:
             raise HTTPException(
-                status_code=400, detail="You cannot delete your own account"
+                status_code=403, detail="You cannot delete your own account"
             )
 
         user_to_delete = await user_crud.read_by_primary_key(db, user_id)
@@ -378,6 +393,9 @@ async def delete_user(
 
         return response
     except Exception as e:
+        # The list stays; the refusal shows as an alert above it
+        if wants_fragment(request):
+            return alert_error(e, "user-page")
         csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = handle_error(
             "pages/user.html",
