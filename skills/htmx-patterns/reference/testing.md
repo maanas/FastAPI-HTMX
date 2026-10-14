@@ -9,7 +9,8 @@ For each route:
    root `id` the trigger targets.
 3. Signed out, with the header: an `HX-Redirect` header, not a `3xx`.
 4. A write without `X-CSRF-Token`: refused, nothing stored.
-5. An invalid form: `422` and the message in the body.
+5. An invalid form: `422`, the `X-Error-Rendered` header and the message in the body; a fragment
+   answer starts with `<title>` (`after_title` in `app/tests/error_asserts.py`).
 6. Each `HX-*` header the route sets: assert its value (`json.loads` for `HX-Trigger`).
 
 Use `httpx.AsyncClient` with `ASGITransport(app=app)` and override `current_active_user` and the

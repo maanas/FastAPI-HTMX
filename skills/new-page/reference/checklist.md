@@ -17,6 +17,9 @@ Detail: the `htmx-patterns` skill, `reference/testing.md`.
 - [ ] No palette class or arbitrary value: `grep -nE '(bg|text|border)-(blue|gray|red|green)-[0-9]|\[#' <same files>` prints nothing.
 - [ ] Every `id` in the new templates is unique on the page.
 - [ ] A new model has its migration and its `init_models` import.
+- [ ] The page defines one literal `{% block title %}<View> | FastAPI HTMX{% endblock %}`; no `<title>` in a partial. Add the view to `VIEWS` in `app/tests/test_titles.py`.
+- [ ] URLs in templates use `path_for`, never `url_for`.
+- [ ] A failed form re-renders with `form` from `submitted_form`, so typed values stay.
 - [ ] `uvx ruff check` on the changed files and `.venv/bin/python -m pytest -q app/tests` pass.
 
 ## Report to the director

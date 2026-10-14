@@ -1,6 +1,7 @@
 ---
 id: 2026-10-14-checker-placeholder-default-and-zsh-names
-status: proposed
+status: applied
+applied: 2026-10-14
 target: .claude/agents/checker.md
 metric: tokens:checker
 revises: 2026-10-14-checker-login-recipe-jar-and-wait

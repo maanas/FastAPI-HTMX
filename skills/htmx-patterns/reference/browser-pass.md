@@ -8,5 +8,6 @@
 - Resize to phone width, then wait; prefer `javascript_tool` (`element.click()`, reading Alpine data,
   `input.validity`) over clicks by coordinate.
 - Check the console on every page: no CSP violation, no "CSP Parser Error", no "Undefined variable".
+  htmx's "Response Status Error Code 4xx" for a swapped error answer is expected.
 - Test repeated identical errors, stale messages after a fix, and each status (400, 403, 422, network).
 - Anything needing a service (MinIO, Docker) that is down goes to TODO.md as untested.

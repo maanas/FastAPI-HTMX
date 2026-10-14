@@ -8,7 +8,8 @@ description: HTMX 2 patterns for this FastAPI + Jinja2 starter - partial versus 
 
 - `HX-Request: true` gets a partial from `templates/partials/`; a normal request gets a full page.
 - Always name `hx-target`; the partial's root carries that `id`.
-- htmx 2 swaps 2xx only. An invalid form returns the form partial with `422`.
+- htmx 2 swaps 2xx only, plus error answers carrying `X-Error-Rendered`. An invalid form returns
+  the form partial with `422`.
 - Every write route calls `csrf_protect.validate_csrf(request)` first; the token travels in
   `X-CSRF-Token`.
 - No inline script, `on*=`, `hx-on:*` or `style=`: the content security policy blocks them.

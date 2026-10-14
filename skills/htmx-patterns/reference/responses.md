@@ -13,14 +13,16 @@
 
 ## Status codes
 
-htmx 2 swaps 2xx responses only; 4xx and 5xx are not swapped.
+htmx 2 swaps 2xx only. `handle_error` (`app/routes/view/errors.py`) sets `X-Error-Rendered` on a
+form or view error answer and the `htmx:beforeSwap` listener in `app/static/js/shell.js` lets
+exactly those swap.
 
 | Case | Response |
 |---|---|
-| Form is invalid | The form partial with the messages, status `422`; `422` is allowed to swap through `responseHandling` in the `htmx-config` meta tag. Never `200` for an invalid form. |
+| Form is invalid | The form partial with the messages and typed values (`form` from `submitted_form`), status `422`, marker header set. Never `200` for an invalid form. |
 | Created, updated | The updated row or list partial, `200` |
 | Deleted | `200` with an empty body and `hx-swap="outerHTML"` on the row, or `204` with an `HX-Trigger` |
-| Not allowed, missing | `403` / `404`, no swap, a toast through `HX-Trigger` |
+| Not allowed, missing | Form and view errors swap with their status. A delete in a list uses `alert_error` (`showAlert`), no swap. An unknown path swaps the not-found fragment only for `HX-Target: dashboard-body`. |
 | Signed out | `HX-Redirect: /login`, see below |
 
 ## Response headers
@@ -41,6 +43,7 @@ Build an `HX-Trigger` value with `json.dumps`, never by string concatenation.
 htmx follows a `3xx` silently and swaps the result into the target, so a signed-out user would see
 the login page inside a table. An auth dependency or handler that redirects must check `HX-Request`
 and answer `200` (or `401`) with `HX-Redirect` instead.
+`http_exception_handler` in `app/exception.py` keeps status and detail; a 401 answers `HX-Redirect`.
 
 ## Errors
 

@@ -2,14 +2,14 @@
 
 ## CSRF
 
-- The page route (`GET`) creates the pair with `csrf_protect.generate_csrf_tokens()`, sets the signed
-  cookie with `csrf_protect.set_csrf_cookie(signed_token, response)` and passes `csrf_token` to the
-  template. `app/routes/view/role.py` shows it.
+- The page route (`GET`) calls `csrf_token_for(request, csrf_protect)` and `set_csrf_cookie(...)` from
+  `app/routes/view/csrf.py` (reuses a valid cookie, no rotation after a write; login issues a new
+  pair) and passes `csrf_token` to the template. `app/routes/view/role.py` shows it.
 - Every `POST`, `PUT`, `PATCH` and `DELETE` handler starts with
   `await csrf_protect.validate_csrf(request)`, before any read of the form.
 - The token travels in the `X-CSRF-Token` header, set once on the shell through `hx-headers` on
-  `<body>`, not repeated on each form. A partial route reads it back from the request header when it
-  needs to re-render a form.
+  `<body>`, not repeated on each form. A partial route that re-renders a form uses `csrf_token_for`
+  too.
 - A `fetch` call in `app/static/js/` sends the same header.
 - A dependency or middleware on a whole router changes every route under it. Grep the templates and
   `app/static/js/` for each existing caller (forms, `fetch`, `hx-post`) and test one real request per
@@ -41,7 +41,7 @@ One meta tag in the shell, nowhere else:
 
 - `includeIndicatorStyles: false` stops htmx from injecting a `<style>` tag; the `.htmx-indicator`
   rules go in the stylesheet.
-- `responseHandling` is added here when `422` must swap (see `responses.md`).
+- `responseHandling` is not used; swapping of errors is the `X-Error-Rendered` listener (`responses.md`).
 
 ## Escaping
 

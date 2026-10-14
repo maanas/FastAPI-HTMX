@@ -1,6 +1,7 @@
 ---
 id: 2026-10-14-htmx-patterns-error-answers
-status: proposed
+status: applied
+applied: 2026-10-14
 target: skills/htmx-patterns/reference/responses.md
 metric: correctness
 ---

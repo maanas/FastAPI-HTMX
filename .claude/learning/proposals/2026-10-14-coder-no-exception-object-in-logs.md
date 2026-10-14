@@ -1,6 +1,7 @@
 ---
 id: 2026-10-14-coder-no-exception-object-in-logs
-status: proposed
+status: applied
+applied: 2026-10-14
 target: .claude/agents/coder.md
 metric: security
 ---

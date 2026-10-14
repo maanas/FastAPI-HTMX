@@ -1,6 +1,7 @@
 ---
 id: 2026-10-14-new-page-titles-urls-forms
-status: proposed
+status: applied
+applied: 2026-10-14
 target: skills/new-page/reference/checklist.md
 metric: correctness
 ---
