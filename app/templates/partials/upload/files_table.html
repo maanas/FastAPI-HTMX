@@ -16,14 +16,14 @@
   {% if file.unique_name %}
   <td class="px-6 py-4">
     <a
-      href="{{ url_for('download_file', file_unique_name=file.unique_name) }}"
+      href="{{ path_for('download_file', file_unique_name=file.unique_name) }}"
       class="font-medium text-fg-brand hover:underline"
     >Download</a>
   </td>
   <td class="px-6 py-4">
     <button
       type="button"
-      hx-delete="{{ url_for('delete_file', file_unique_name=file.unique_name) }}"
+      hx-delete="{{ path_for('delete_file', file_unique_name=file.unique_name) }}"
       hx-target="#upload-result"
       hx-swap="innerHTML"
       class="font-medium text-fg-danger hover:underline"

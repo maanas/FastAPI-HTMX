@@ -2,8 +2,10 @@ import re
 import uuid
 
 import pytest
+from fastapi_csrf_protect import CsrfProtect
 from fastapi_users.password import PasswordHelper
 from httpx import ASGITransport, AsyncClient
+from itsdangerous import URLSafeTimedSerializer
 from loguru import logger
 from sqlalchemy import delete
 
@@ -79,11 +81,27 @@ def credentials(email, password=PASSWORD):
     return {"username": email, "password": password}
 
 
+def csrf_token_in_jar(client):
+    """The token inside the signed CSRF cookie the client holds."""
+    signed = client.cookies.get("fastapi-csrf-token")
+    serializer = URLSafeTimedSerializer(
+        CsrfProtect()._secret_key, salt="fastapi-csrf-token"
+    )
+    return serializer.loads(signed)
+
+
 async def login(client, email, password=PASSWORD):
+    """Log in; the headers carry the token of the cookie the client holds afterwards.
+
+    A successful login replaces the CSRF cookie, so the token used for the login
+    request is not the one for later writes.
+    """
     headers = await csrf_headers(client)
     response = await client.post(
         "/auth/jwt/login", data=credentials(email, password), headers=headers
     )
+    if response.status_code == 204:
+        headers = {"X-CSRF-Token": csrf_token_in_jar(client)}
     return response, headers
 
 
@@ -280,6 +298,8 @@ async def test_login_valid_pair_good_credentials_is_204_with_cookie(client, user
 async def test_login_valid_pair_bad_credentials_is_400(client, users):
     response, _ = await login(client, users["other"], "wrong-password-value")
     assert response.status_code == 400
+    # What the login script reads: the library's detail, not a fixed text
+    assert response.json() == {"detail": "LOGIN_BAD_CREDENTIALS"}
     assert COOKIE not in response.headers.get("set-cookie", "")
 
 
@@ -396,15 +416,16 @@ async def test_users_router_refuses_a_self_delete(client, users, db_session, for
 async def test_users_router_leaves_a_non_uuid_to_the_library(client, users):
     _, headers = await login(client, users["admin"])
     lines: list[str] = []
-    sink = logger.add(lines.append, level="ERROR")
+    sink = logger.add(lines.append, level="WARNING")
     try:
         response = await client.delete("/users/not-a-uuid", headers=headers)
     finally:
         logger.remove(sink)
-    # The library answers 404 (an unparseable id); the app's handler shows 400.
+    # The library answers 404 (an unparseable id) and the handler keeps it.
     # Our own guard would log "cannot delete your own account" instead.
-    assert response.status_code == 400
-    assert "Not Found : 404" in "".join(lines)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Not Found"}
+    assert "HTTP 404: DELETE /users/not-a-uuid" in "".join(lines)
     assert "own account" not in "".join(lines)
 
 
@@ -447,3 +468,81 @@ def test_components_script_shows_every_login_and_register_failure():
         "Registration failed. Try again.",
     ):
         assert text in script
+
+
+# 4. login replaces the CSRF cookie
+
+CSRF_COOKIE = "fastapi-csrf-token"
+ROLE_FORM = {"role_name": "pytest-rotate-role", "role_desc": "valid text"}
+# The fixed message handle_error shows for a failed CSRF check
+REFUSAL = ("Your session has expired",)
+
+
+def csrf_cookies(response):
+    return [
+        c for c in response.headers.get_list("set-cookie") if c.startswith(CSRF_COOKIE)
+    ]
+
+
+async def test_login_sets_a_new_csrf_cookie(client, users):
+    headers = await csrf_headers(client)
+    before = client.cookies.get(CSRF_COOKIE)
+    response = await client.post(
+        "/auth/jwt/login", data=credentials(users["other"]), headers=headers
+    )
+    assert response.status_code == 204
+    assert len(csrf_cookies(response)) == 1
+    assert client.cookies.get(CSRF_COOKIE) not in (None, before)
+
+
+async def test_old_token_is_refused_and_the_dashboard_token_works_after_login(
+    client, users
+):
+    old = await csrf_headers(client)
+    response = await client.post(
+        "/auth/jwt/login", data=credentials(users["admin"]), headers=old
+    )
+    assert response.status_code == 204
+    refused = await client.post(
+        "/post_create_roles", data=ROLE_FORM, headers={**old, "HX-Request": "true"}
+    )
+    assert any(text in refused.text for text in REFUSAL)
+    page = await client.get("/role")
+    token = re.search(r'"X-CSRF-Token":\s*"([^"]+)"', page.text).group(1)
+    assert token != old["X-CSRF-Token"]
+    accepted = await client.post(
+        "/post_create_roles",
+        data=ROLE_FORM,
+        headers={"X-CSRF-Token": token, "HX-Request": "true"},
+    )
+    assert not any(text in accepted.text for text in REFUSAL)
+
+
+async def test_failed_login_sets_no_csrf_cookie(client, users):
+    response, _ = await login(client, users["other"], "wrong-password")
+    assert response.status_code == 400
+    assert csrf_cookies(response) == []
+
+
+async def test_login_without_the_csrf_pair_sets_no_csrf_cookie(client, users):
+    response = await client.post(
+        "/auth/jwt/login", data=credentials(users["other"])
+    )
+    assert response.status_code == 403
+    assert csrf_cookies(response) == []
+
+
+async def test_a_planted_csrf_cookie_does_not_survive_login(client, users):
+    planted_token, planted = CsrfProtect().generate_csrf_tokens()
+    await client.get("/login")  # the jar now holds a cookie; replace its value
+    domain = next(c.domain for c in client.cookies.jar if c.name == CSRF_COOKIE)
+    client.cookies.set(CSRF_COOKIE, planted, domain=domain, path="/")
+    response = await client.post(
+        "/auth/jwt/login",
+        data=credentials(users["other"]),
+        headers={"X-CSRF-Token": planted_token},
+    )
+    assert response.status_code == 204  # the planted pair itself is valid
+    assert client.cookies.get(CSRF_COOKIE) != planted
+    page = await client.get("/dashboard")
+    assert planted_token not in page.text

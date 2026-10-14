@@ -14,6 +14,8 @@ RAW_PATTERNS = (CSP_FORBIDDEN[1][0], CSP_FORBIDDEN[4][0])
 # htmx features that need eval and stop working under allowEval=false
 JS_VALUE = re.compile(r"^\s*(?:js|javascript):", re.I)
 JINJA_TAG = re.compile(r"\{\{.*?\}\}|\{%.*?%\}", re.S)
+# url_for() renders scheme and host; htmx runs with selfRequestsOnly, so use path_for()
+URL_FOR = re.compile(r"\burl_for\s*\(")
 OPENERS = {"(": ")", "{": "}", "[": "]"}
 
 
@@ -116,8 +118,12 @@ class _RuleScanner(HTMLParser):
 
 def template_rule_violations(text):
     """Inline scripts, style attributes, on* and hx-on handlers, hx-confirm next to an
-    Alpine click handler, and Alpine attributes the CSP build cannot parse."""
+    Alpine click handler, url_for() calls, and Alpine attributes the CSP build cannot
+    parse."""
     scanner = _RuleScanner()
+    for tag in JINJA_TAG.findall(text):
+        if URL_FOR.search(tag):
+            scanner.problems.append(f"{tag[:40]!r} calls url_for(), use path_for()")
     scanner.feed(text)
     scanner.close()
     return scanner.problems

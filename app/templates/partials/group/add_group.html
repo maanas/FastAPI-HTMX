@@ -1,14 +1,14 @@
 {# Fragment, no layout. Root id is the sidebar link's hx-target. #}
 {# Form: theme/flowbite/content/forms/input-field.md "Input fields"; alerts.md "Default alert" #}
+{% set f = form or {} %}
 <div id="dashboard-body" class="p-4 sm:ml-64 mt-14">
   <div class="p-4 border-1 border-default border-dashed rounded-base">
     <h1 class="mb-4 text-xl font-semibold text-heading">Add Group</h1>
     <form
       id="create-group-form"
       hx-target="#dashboard-body"
-      hx-post="{{ url_for('post_create_group') }}"
+      hx-post="{{ path_for('post_create_group') }}"
       hx-swap="outerHTML"
-      hx-push-url="true"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
     >
       <div class="mb-6">
@@ -17,6 +17,7 @@
           type="text"
           id="group-type"
           name="group_name"
+          value="{{ f.group_name }}"
           placeholder="Enter the group type"
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
@@ -28,6 +29,7 @@
           type="text"
           id="group-desc"
           name="group_desc"
+          value="{{ f.group_desc }}"
           placeholder="Enter the group description."
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"

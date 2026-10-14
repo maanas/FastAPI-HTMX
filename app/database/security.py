@@ -15,6 +15,7 @@ from loguru import logger
 from app.core.auth_settings import get_auth_secret
 from app.core.csrf_settings import CsrfSettings, crsf_settings
 from app.database.db import User, get_user_db
+from app.routes.view.csrf import rotate_csrf_cookie
 
 SECRET: str = get_auth_secret()
 
@@ -42,6 +43,9 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         request: Optional[Request] = None,
         response: Optional[Response] = None,
     ):
+        # A new CSRF pair for the new session; the cookie from before login is dropped
+        if response is not None:
+            rotate_csrf_cookie(response)
         logger.info(f"User {user.id} logged in.")
 
 

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">FastAPI HTMX starter</title>
+  <rect width="128" height="128" rx="28" fill="#1447e6"/>
+  <g fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="44,44 24,64 44,84"/>
+    <polyline points="84,44 104,64 84,84"/>
+  </g>
+  <polygon points="71,28 50,69 63,69 57,100 78,59 65,59" fill="#ffffff"/>
+</svg>

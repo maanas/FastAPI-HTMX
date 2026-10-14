@@ -17,6 +17,8 @@ from app.database.security import current_active_user
 from app.models.groups import Group, UserGroupLink
 from app.models.users import User, UserProfile
 
+from .error_asserts import CSRF_MESSAGE, after_title, alert_message
+
 pytestmark = pytest.mark.anyio
 
 HX = {"HX-Request": "true"}
@@ -99,13 +101,15 @@ def assert_full_page(response):
     assert "HX-Request" in response.headers["vary"]
 
 
-def assert_fragment(response, root=True, vary=True):
-    assert response.status_code == 200
+def assert_fragment(response, root=True, vary=True, status=200):
+    assert response.status_code == status
+    if status != 200:
+        assert response.headers["X-Error-Rendered"] == "1"
     assert "<nav" not in response.text
     assert "<aside" not in response.text
     assert "<html" not in response.text
     if root:
-        assert response.text.lstrip().startswith('<div id="dashboard-body"')
+        assert after_title(response.text).startswith('<div id="dashboard-body"')
         assert response.text.count('id="dashboard-body"') == 1
     if vary:
         assert "HX-Request" in response.headers["vary"]
@@ -177,7 +181,7 @@ async def test_user_profile_is_a_fragment_for_every_request(
         assert_fragment(response, root=False, vary=False)
         assert "Ada Lovelace" in response.text
     missing = await client.get(f"/get_user_profile/{uuid.uuid4()}")
-    assert_fragment(missing, root=False, vary=False)
+    assert_fragment(missing, root=False, vary=False, status=404)
     assert "not found" in missing.text
 
 
@@ -192,13 +196,14 @@ async def test_error_response_follows_the_request_kind(client, logged_in):
     )
     for url in urls:
         fragment = await client.get(url, headers=HX)
-        assert_fragment(fragment, root=False)
+        assert_fragment(fragment, root=False, status=403)
         assert "Not authorized" in fragment.text
         page = await client.get(url)
+        assert page.status_code == 403
         assert page.text.count("<nav") == 1
         assert "Not authorized" in page.text
     profile = await client.get(f"/get_user_profile/{unknown}")
-    assert_fragment(profile, root=False, vary=False)
+    assert_fragment(profile, root=False, vary=False, status=403)
     assert "Not authorized" in profile.text
 
 
@@ -238,9 +243,8 @@ async def test_delete_needs_the_csrf_token(
 ):
     group = await make_group(db_session, created_groups)
     response = await client.delete(f"/delete_group/{group.id}", headers=HX)
-    assert "HX-Location" not in response.headers
-    assert "<nav" not in response.text
-    assert "Missing Cookie: `fastapi-csrf-token`" in response.text
+    assert response.status_code == 403
+    assert alert_message(response) == CSRF_MESSAGE
     assert await group_names(db_session) == [GROUP_NAME]
 
 
@@ -287,8 +291,8 @@ async def test_delete_is_refused_for_a_regular_user(
     response = await client.delete(
         f"/delete_group/{group.id}", headers={**HX, "X-CSRF-Token": token}
     )
-    assert "HX-Location" not in response.headers
-    assert "Not authorized" in response.text
+    assert response.status_code == 403
+    assert "Not authorized" in alert_message(response)
     assert await group_names(db_session) == [GROUP_NAME]
 
 
@@ -312,7 +316,7 @@ async def test_create_adds_a_group_and_refuses_a_duplicate(
     duplicate = await client.post(
         "/post_create_group", data=data, headers={**HX, "X-CSRF-Token": token}
     )
-    assert duplicate.status_code == 200
+    assert duplicate.status_code == 409
     assert "HX-Location" not in duplicate.headers
     assert "already exists" in duplicate.text
     assert 'id="create-group-form"' in duplicate.text
@@ -345,7 +349,7 @@ async def test_rename_to_an_existing_name_is_an_error_not_a_500(
         data={"group_name": GROUP_NAME, "group_desc": "Another group"},
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert response.status_code == 200
+    assert response.status_code == 409
     assert "HX-Location" not in response.headers
     assert "already exists" in response.text
     assert 'id="edit-group-form"' in response.text
@@ -377,11 +381,14 @@ async def test_update_without_the_token_shows_no_group_data(
     group = await make_group(db_session, created_groups, desc="Secret description")
     response = await client.put(
         f"/post_update_group{group.id}",
-        data={"group_name": GROUP_NAME, "group_desc": "Changed"},
+        data={"group_name": "typed-name", "group_desc": "Changed"},
         headers=HX,
     )
+    assert response.status_code == 403
     assert "HX-Location" not in response.headers
-    assert "Missing Cookie" in response.text
+    assert CSRF_MESSAGE in response.text
+    # The form holds what was typed; nothing stored is read for this request
+    assert 'value="typed-name"' in response.text
     assert "Secret description" not in response.text
     assert GROUP_NAME not in response.text
 
@@ -393,9 +400,12 @@ async def test_allocation_without_the_token_shows_no_group_data(
     response = await client.post(
         f"/post_group_user_link/{group.id}", data={}, headers=HX
     )
+    assert response.status_code == 403
     assert "HX-Location" not in response.headers
-    assert "Missing Cookie" in response.text
-    assert GROUP_NAME not in response.text
+    assert CSRF_MESSAGE in response.text
+    # The ticked boxes cannot be shown again without the user list, so a superuser
+    # gets the form back (see test_form_values.py for the boxes)
+    assert 'id="create-group-form"' in response.text
 
 
 async def test_allocation_post_redirects_and_keeps_the_form_on_error(
@@ -416,7 +426,7 @@ async def test_allocation_post_redirects_and_keeps_the_form_on_error(
         data={"all_users": "not-a-uuid"},
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert bad.status_code == 200
+    assert bad.status_code == 400
     assert "HX-Location" not in bad.headers
     assert 'id="create-group-form"' in bad.text
     assert GROUP_NAME in bad.text
@@ -497,7 +507,7 @@ async def test_an_unknown_user_id_is_refused_and_nothing_is_written(
         },
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert response.status_code == 200
+    assert response.status_code == 400
     assert "HX-Location" not in response.headers
     assert "Unknown user selected" in response.text
     assert 'id="create-group-form"' in response.text
@@ -615,6 +625,6 @@ async def test_a_failed_allocation_with_a_real_user_row_is_not_a_500(
         data={"all_users": "not-a-uuid"},
         headers={**HX, "X-CSRF-Token": token},
     )
-    assert response.status_code == 200
+    assert response.status_code == 400
     assert "HX-Location" not in response.headers
     assert 'id="create-group-form"' in response.text

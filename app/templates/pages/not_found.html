@@ -1,0 +1,6 @@
+{% extends "base/base.html" %}
+{% block title %}Page not found | FastAPI HTMX{% endblock %}
+{# No navigation: an unknown path does not check whether the visitor is signed in #}
+{% block shell %}
+{% include "partials/errors/not_found.html" %}
+{% endblock %}

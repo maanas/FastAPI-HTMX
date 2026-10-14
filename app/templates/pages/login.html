@@ -80,7 +80,7 @@
     <button
       type="button"
       id="create-user-button"
-      hx-get="{{ url_for('get_register') }}"
+      hx-get="{{ path_for('get_register') }}"
       hx-target="#login-page"
       hx-swap="outerHTML"
       hx-push-url="true"

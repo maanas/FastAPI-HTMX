@@ -204,15 +204,16 @@ document.addEventListener("alpine:init", () => {
 
 document.addEventListener("alpine:init", () => {
   // Alert state shared by the list pages and the upload page. showAlertMessage() below
-  // sets isUpdated / isAdded / isDeleted and message; each flag resets after 3 seconds.
+  // sets isUpdated / isAdded / isDeleted / isError and message; each flag resets after 3 seconds.
   const alertState = () => ({
     isLoading: false,
     isUpdated: false,
     isAdded: false,
     isDeleted: false,
+    isError: false,
     message: "",
     watchAlerts() {
-      for (const flag of ["isUpdated", "isAdded", "isDeleted"]) {
+      for (const flag of ["isUpdated", "isAdded", "isDeleted", "isError"]) {
         this.$watch(flag, (value) => {
           if (value) {
             setTimeout(() => {
@@ -291,6 +292,12 @@ document.body.addEventListener("htmx:afterSettle", function (evt) {
 // Handle page transitions with HX-Location
 document.body.addEventListener("showAlert", function (evt) {
   try {
+    // A refused action (alert_error) leaves the page as it is: no swap follows, so
+    // show it now instead of waiting for the next afterSettle
+    if (evt.detail.type === "error") {
+      showAlertMessage(evt.detail);
+      return;
+    }
     // Store alert for processing after page load
     window.pendingAlerts.push(evt.detail);
   } catch (error) {
@@ -307,6 +314,9 @@ function showAlertMessage(alertData) {
 
   const data = Alpine.$data(component);
 
+  // The delay lets a page that is still being swapped in settle; an error has no swap
+  const delay = alertData.type === "error" ? 0 : 1000;
+
   setTimeout(function () {
     if (alertData.type === "updated") {
       data.isUpdated = true;
@@ -317,6 +327,9 @@ function showAlertMessage(alertData) {
     } else if (alertData.type === "deleted") {
       data.isDeleted = true;
       data.message = alertData.message;
+    } else if (alertData.type === "error") {
+      data.isError = true;
+      data.message = alertData.message;
     }
-  }, 1000);
+  }, delay);
 }
