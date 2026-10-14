@@ -1,5 +1,6 @@
 import re
 import uuid
+from pathlib import Path
 
 import pytest
 from fastapi_csrf_protect import CsrfProtect
@@ -19,6 +20,8 @@ from app.database.security import (
 from app.models.users import User
 
 pytestmark = pytest.mark.anyio
+
+COMPONENTS_JS = Path(__file__).resolve().parents[1] / "static/js/components.js"
 
 COOKIE = "fastapiusersauth"
 EMAIL_PREFIX = "pytest-authsec-"
@@ -371,9 +374,7 @@ def register_fetch_sends_token(script):
 
 
 def test_register_script_sends_the_token_header():
-    from pathlib import Path
-
-    assert register_fetch_sends_token(Path("app/static/js/components.js").read_text())
+    assert register_fetch_sends_token(COMPONENTS_JS.read_text())
 
 
 def test_register_script_check_flags_a_header_only_in_another_component():
@@ -449,17 +450,13 @@ async def test_users_router_reads_need_no_csrf(client, users):
 
 
 def test_components_script_has_no_alert_or_console_log():
-    from pathlib import Path
-
-    script = Path("app/static/js/components.js").read_text()
+    script = COMPONENTS_JS.read_text()
     assert "alert(" not in script
     assert "console.log" not in script
 
 
 def test_components_script_shows_every_login_and_register_failure():
-    from pathlib import Path
-
-    script = Path("app/static/js/components.js").read_text()
+    script = COMPONENTS_JS.read_text()
     for text in (
         "Enter your password",
         "Incorrect username or password",
