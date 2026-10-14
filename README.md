@@ -95,10 +95,13 @@ You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
    .venv/bin/python main.py
    ```
 
-   It serves on `http://127.0.0.1:8080`.
+   It serves on `http://127.0.0.1:8080`. Templates, static files, the Alembic location and the
+   `.env` file are found from the package, so the app and the tests run from any directory. A
+   relative SQLite path in `DATABASE_URL` (the default) still points into the directory you start
+   from; use an absolute path to avoid that.
 
 7. **Run the tests.** They build their own throwaway SQLite database from the migrations and never
-   touch the one `DATABASE_URL` points to. They still need the other settings from step 4 (`.env`
+   touch the one `DATABASE_URL` points to. They still need the other settings from step 3 (`.env`
    or the environment).
 
    ```sh
@@ -143,8 +146,25 @@ with the container.
 
 ### Windows
 
-`setup.ps1` is the upstream helper script. It still expects poetry and the old migration flow and
-has not been updated for uv: follow the steps above instead.
+You need Python 3.12 and [uv](https://docs.astral.sh/uv/). From the repository root, run:
+
+```powershell
+.\setup.ps1
+```
+
+The script checks that uv is installed, runs `uv sync`, creates `.env` from `.env.example` only if
+there is none (with a random `AUTH_SECRET`; the other `change-me` values are yours to edit), and
+runs `.venv\Scripts\alembic upgrade head`. It creates no account. Then:
+
+```powershell
+.venv\Scripts\python -m app.commands.create_superuser
+.venv\Scripts\python main.py
+.venv\Scripts\python -m pytest -q app/tests
+```
+
+In the steps above, replace `.venv/bin/` with `.venv\Scripts\` on Windows.
+
+`setup.ps1` has not been run on Windows yet.
 
 ## Project structure
 
@@ -269,5 +289,6 @@ Open an issue or a pull request on [maanas/FastAPI-HTMX](https://github.com/maan
 
 ## License
 
-The upstream project states the MIT License in its README. The repository holds no `LICENSE` file
-yet; adding one is listed in `TODO.md`.
+The MIT license in [`LICENSE`](LICENSE) covers this fork's changes. The upstream project
+(Hybridhash/FastAPI-HTMX) states MIT in its README but ships no license file, so the license of the
+upstream code is as upstream states it.
