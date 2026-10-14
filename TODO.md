@@ -41,6 +41,9 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   and a must-not-flag case; reviewer: runs the tests with placeholder settings when the prompt
   gives none; `htmx-patterns`: a router-wide guard needs a request per existing caller, and the
   shipped headers, both in `reference/security.md`).
+- Two more were applied with the Browser pass task on 2026-10-14 (checker: wait for `/login`,
+  save the CSRF cookie from `GET /login`, placeholder settings instead of SKIPPED;
+  `htmx-patterns`: the browser pass method in `reference/browser-pass.md`).
 - Next: "htmx leftovers" (the browser pass added to it), then the MinIO part of "Browser pass".
 
 ## Change list

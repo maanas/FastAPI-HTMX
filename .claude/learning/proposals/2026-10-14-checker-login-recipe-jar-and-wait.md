@@ -1,6 +1,7 @@
 ---
 id: 2026-10-14-checker-login-recipe-jar-and-wait
-status: proposed
+status: applied
+applied: 2026-10-14
 target: .claude/agents/checker.md
 metric: tokens:checker
 revises: 2026-10-13-checker-smoke-login-recipe
