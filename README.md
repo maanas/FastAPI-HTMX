@@ -97,7 +97,9 @@ You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
    It serves on `http://127.0.0.1:8080`.
 
-7. **Run the tests.** Run them after step 4: they use the database `DATABASE_URL` points to.
+7. **Run the tests.** They build their own throwaway SQLite database from the migrations and never
+   touch the one `DATABASE_URL` points to. They still need the other settings from step 4 (`.env`
+   or the environment).
 
    ```sh
    .venv/bin/python -m pytest -q app/tests
