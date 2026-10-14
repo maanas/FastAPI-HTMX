@@ -16,6 +16,7 @@ from app.database.db import CurrentAsyncSession
 from app.database.security import current_active_user
 from app.models.upload import Upload as UploadsModelDB
 from app.models.users import User as UserModelDB
+from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
 from app.routes.view.errors import handle_error
 from app.routes.view.fragments import render_view
 from app.routes.view.view_crud import SQLAlchemyCRUD
@@ -139,7 +140,7 @@ async def get_upload_file(
                 status_code=403, detail="Not authorized to upload files"
             )
         files = await read_files(db, user_id, skip, limit)
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = render_view(
             request,
             "pages/upload.html",
@@ -151,18 +152,22 @@ async def get_upload_file(
                 "csrf_token": csrf_token,
             },
         )
-        csrf_protect.set_csrf_cookie(signed_token, response)
+        set_csrf_cookie(csrf_protect, response, signed_token)
         return response
     except Exception as e:
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/upload.html",
             {
                 "request": request,
                 "user_type": is_superuser,
+                "csrf_token": csrf_token,
             },
             e,
             fragment=UPLOAD_PAGE,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 @upload_view_route.post("/post_upload_file", response_class=HTMLResponse)
@@ -302,6 +307,7 @@ async def download_file(
     file_unique_name: str,
     db: CurrentAsyncSession,
     current_user: UserModelDB = Depends(current_active_user),
+    csrf_protect: CsrfProtect = Depends(),
 ):
     # Read once: a rollback expires the user object, and reading it afterwards fails
     is_superuser = current_user.is_superuser
@@ -322,12 +328,15 @@ async def download_file(
             headers={"Content-Disposition": content_disposition(row.name)},
         )
     except Exception as e:
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/upload.html",
-            {"request": request, "user_type": is_superuser},
+            {"request": request, "user_type": is_superuser, "csrf_token": csrf_token},
             e,
             fragment=UPLOAD_PAGE,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Route to delete a file from the back end

@@ -15,6 +15,7 @@ from app.models.groups import UserGroupLink as UserGroupLinkModelDB
 from app.models.users import Role as UserRoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
+from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
 from app.routes.view.errors import handle_error
 from app.routes.view.fragments import render_view
 from app.routes.view.view_crud import SQLAlchemyCRUD
@@ -63,7 +64,7 @@ async def get_groups(
         # Access the cookies using the Request object
         groups = await group_crud.read_all(db, skip, limit, join_relationships=True)
 
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
 
         response = render_view(
             request,
@@ -77,12 +78,12 @@ async def get_groups(
             },
         )
 
-        csrf_protect.set_csrf_cookie(signed_token, response)
+        set_csrf_cookie(csrf_protect, response, signed_token)
 
         return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/groups.html",
             {
                 "request": request,
@@ -92,6 +93,8 @@ async def get_groups(
             e,
             fragment=GROUP_LIST,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Defining a route to get the user profile based on id
@@ -136,14 +139,15 @@ async def get_user_profile(
 async def get_create_group(
     request: Request,
     current_user: UserModelDB = Depends(current_active_user),
+    csrf_protect: CsrfProtect = Depends(),
 ):
     try:
         # checking the current user as super user
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add groups")
-        csrf_token = request.headers.get("X-CSRF-Token")
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
 
-        return render_view(
+        response = render_view(
             request,
             "pages/group_add.html",
             GROUP_ADD,
@@ -153,9 +157,11 @@ async def get_create_group(
                 "csrf_token": csrf_token,
             },
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/group_add.html",
             {
                 "request": request,
@@ -165,6 +171,8 @@ async def get_create_group(
             e,
             fragment=GROUP_ADD,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Route to get the group by ID
@@ -174,6 +182,7 @@ async def get_group_by_id(
     group_id: uuid.UUID,
     db: CurrentAsyncSession,
     current_user: UserModelDB = Depends(current_active_user),
+    csrf_protect: CsrfProtect = Depends(),
 ):
     group = None
     try:
@@ -182,9 +191,9 @@ async def get_group_by_id(
             raise HTTPException(status_code=403, detail="Not authorized to add groups")
         group = await group_crud.read_by_primary_key(db, group_id)
 
-        csrf_token = request.headers.get("X-CSRF-Token")
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
 
-        return render_view(
+        response = render_view(
             request,
             "pages/group_edit.html",
             GROUP_EDIT,
@@ -195,9 +204,11 @@ async def get_group_by_id(
                 "csrf_token": csrf_token,
             },
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/group_edit.html",
             {
                 "request": request,
@@ -208,6 +219,8 @@ async def get_group_by_id(
             e,
             fragment=GROUP_EDIT,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 def name_is_taken(existing, group_id: uuid.UUID | None = None) -> bool:
@@ -250,8 +263,6 @@ async def post_create_group(
             raise HTTPException(status_code=400, detail="Group name already exists")
         await group_crud.create(dict(group_create), db)
 
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-
         # Redirecting to the groups page upon successful group creation
         headers = {
             "HX-Location": HX_LOCATION_GROUPS,
@@ -264,22 +275,15 @@ async def post_create_group(
                     }
                 }
             ),
-            "csrf_token": csrf_token,
         }
 
         response = HTMLResponse(content="", headers=headers)
 
-        # UnSetting the CSRF cookie
-        csrf_protect.unset_csrf_cookie(response)
-
-        # Setting a new CSRF cookie for validation by post future requests
-        csrf_protect.set_csrf_cookie(signed_token, response)
-
         return response
 
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/group_add.html",
             {
                 "request": request,
@@ -289,6 +293,8 @@ async def post_create_group(
             e,
             fragment=GROUP_ADD,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Route to update a group
@@ -328,8 +334,6 @@ async def post_update_group(
 
         await group_crud.update(db, group_id, dict(group_update))
 
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-
         # Redirecting to the groups page upon successful group update
         headers = {
             "HX-Location": HX_LOCATION_GROUPS,
@@ -342,18 +346,13 @@ async def post_update_group(
                     }
                 }
             ),
-            "csrf_token": csrf_token,
         }
         response = HTMLResponse(content="", headers=headers)
 
-        csrf_protect.unset_csrf_cookie(response)
-
-        csrf_protect.set_csrf_cookie(signed_token, response)
-
         return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/group_edit.html",
             {
                 "request": request,
@@ -364,6 +363,8 @@ async def post_update_group(
             e,
             fragment=GROUP_EDIT,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Route to delete a group
@@ -386,8 +387,6 @@ async def delete_group(
         group_name = group_to_delete.group_name
         await group_crud.delete(db, group_id)
 
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-
         headers = {
             "HX-Location": HX_LOCATION_GROUPS,
             "HX-Trigger": json.dumps(
@@ -402,14 +401,10 @@ async def delete_group(
         }
         response = HTMLResponse(content="", headers=headers)
 
-        csrf_protect.unset_csrf_cookie(response)
-
-        csrf_protect.set_csrf_cookie(signed_token, response)
-
         return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/groups.html",
             {
                 "request": request,
@@ -419,6 +414,8 @@ async def delete_group(
             e,
             fragment=GROUP_LIST,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 """
@@ -445,6 +442,7 @@ async def get_group_users(
     group_id: uuid.UUID,
     db: CurrentAsyncSession,
     current_user: UserModelDB = Depends(current_active_user),
+    csrf_protect: CsrfProtect = Depends(),
 ):
     group = None
     try:
@@ -453,8 +451,8 @@ async def get_group_users(
             raise HTTPException(status_code=403, detail="Not authorized to add groups")
         group, users, group_user_ids = await read_allocation(db, group_id)
 
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return render_view(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = render_view(
             request,
             "pages/group_users.html",
             GROUP_USERS,
@@ -467,9 +465,11 @@ async def get_group_users(
                 "user_type": current_user.is_superuser,
             },
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/group_users.html",
             {
                 "request": request,
@@ -480,6 +480,8 @@ async def get_group_users(
             e,
             fragment=GROUP_USERS,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Update the UserGroupLink model based on selected user for a group
@@ -558,8 +560,6 @@ async def post_group_user_link(
             db.add_all([UserGroupLinkModelDB(**link) for link in db_data])
             await db.commit()
 
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-
         headers = {
             "HX-Location": HX_LOCATION_GROUPS,
             "HX-Trigger": json.dumps(
@@ -571,14 +571,9 @@ async def post_group_user_link(
                     }
                 }
             ),
-            "csrf_token": csrf_token,
         }
 
         response = HTMLResponse(content="", headers=headers)
-
-        csrf_protect.unset_csrf_cookie(response)
-
-        csrf_protect.set_csrf_cookie(signed_token, response)
 
         return response
     except Exception as e:
@@ -592,8 +587,8 @@ async def post_group_user_link(
                 group, users, group_user_ids = await read_allocation(db, group_id)
             except Exception:
                 pass
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/group_users.html",
             {
                 "request": request,
@@ -606,3 +601,5 @@ async def post_group_user_link(
             e,
             fragment=GROUP_USERS,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response

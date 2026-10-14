@@ -14,6 +14,7 @@ from app.database.security import current_active_user
 from app.models.users import Role as RoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
+from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
 from app.routes.view.errors import handle_error
 from app.routes.view.fragments import render_view
 from app.routes.view.view_crud import SQLAlchemyCRUD
@@ -74,7 +75,7 @@ async def get_users(
         token = request.cookies.get("fastapiusersauth")
         users = await user_crud.read_all(db, skip, limit, join_relationships=True)
 
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
 
         response = render_view(
             request,
@@ -89,13 +90,13 @@ async def get_users(
             },
         )
 
-        csrf_protect.set_csrf_cookie(signed_token, response)
+        set_csrf_cookie(csrf_protect, response, signed_token)
 
         return response
     except Exception as e:
         token = request.cookies.get("fastapiusersauth")
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/user.html",
             {
                 "request": request,
@@ -106,12 +107,15 @@ async def get_users(
             e,
             fragment=USER_LIST,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 @user_view_route.get("/get_create_users", response_class=HTMLResponse)
 async def get_create_users(
     request: Request,
     current_user: UserModelDB = Depends(current_active_user),
+    csrf_protect: CsrfProtect = Depends(),
 ):
     """
     Route handler function to render the template for creating a new user.
@@ -131,19 +135,33 @@ async def get_create_users(
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add users")
         # Redirecting to the add role page upon successful role creation
-        return render_view(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = render_view(
             request,
             "pages/user_add.html",
             USER_ADD,
-            {"request": request, "user_type": current_user.is_superuser},
+            {
+                "request": request,
+                "user_type": current_user.is_superuser,
+                "csrf_token": csrf_token,
+            },
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
     except Exception as e:
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/user_add.html",
-            {"request": request, "user_type": current_user.is_superuser},
+            {
+                "request": request,
+                "user_type": current_user.is_superuser,
+                "csrf_token": csrf_token,
+            },
             e,
             fragment=USER_ADD,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Defining end point to get the record based on the id
@@ -153,6 +171,7 @@ async def get_user_by_id(
     user_id: uuid.UUID,
     db: CurrentAsyncSession,
     current_user: UserModelDB = Depends(current_active_user),
+    csrf_protect: CsrfProtect = Depends(),
     skip: int = 0,
     limit: int = 100,
 ):
@@ -167,9 +186,9 @@ async def get_user_by_id(
             )
         user = await user_crud.read_by_primary_key(db, user_id, join_relationships=True)
 
-        csrf_token = request.headers.get("X-CSRF-Token")
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
 
-        return render_view(
+        response = render_view(
             request,
             "pages/user_edit.html",
             USER_EDIT,
@@ -181,9 +200,11 @@ async def get_user_by_id(
                 "csrf_token": csrf_token,
             },
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/user_edit.html",
             {
                 "request": request,
@@ -195,6 +216,8 @@ async def get_user_by_id(
             e,
             fragment=USER_EDIT,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Defining a endpoint to update the record based on the id
@@ -254,7 +277,6 @@ async def post_update_user(
             if role_id:
                 await user_crud.update(db, user_id, {"role_id": role_id})
 
-            csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
             headers = {
                 "HX-Location": HX_LOCATION_USERS,
                 "HX-Trigger": json.dumps(
@@ -266,13 +288,8 @@ async def post_update_user(
                         },
                     }
                 ),
-                "csrf_token": csrf_token,
             }
             response = HTMLResponse(content="", headers=headers)
-
-            csrf_protect.unset_csrf_cookie(response)
-
-            csrf_protect.set_csrf_cookie(signed_token, response)
 
             return response
         else:
@@ -285,8 +302,6 @@ async def post_update_user(
             if role_id:
                 await user_crud.update(db, user_id, {"role_id": role_id})
 
-            csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-
             headers = {
                 "HX-Location": HX_LOCATION_USERS,
                 "HX-Trigger": json.dumps(
@@ -298,20 +313,15 @@ async def post_update_user(
                         },
                     }
                 ),
-                "csrf_token": csrf_token,
             }
             response = HTMLResponse(content="", headers=headers)
-
-            csrf_protect.unset_csrf_cookie(response)
-
-            csrf_protect.set_csrf_cookie(signed_token, response)
 
             return response
     except Exception as e:
         user = await user_crud.read_by_primary_key(db, user_id, join_relationships=True)
         roles = await role_crud.read_all(db)
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/user_edit.html",
             {
                 "request": request,
@@ -322,6 +332,8 @@ async def post_update_user(
             e,
             fragment=USER_EDIT,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response
 
 
 # Defining a endpoint to delete the record based on the id
@@ -350,7 +362,6 @@ async def delete_user(
         email = user_to_delete.email
         await user_crud.delete(db, user_id)
 
-        csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
         headers = {
             "HX-Location": HX_LOCATION_USERS,
             "HX-Trigger": json.dumps(
@@ -362,18 +373,13 @@ async def delete_user(
                     },
                 }
             ),
-            "csrf_token": csrf_token,
         }
         response = HTMLResponse(content="", headers=headers)
 
-        csrf_protect.unset_csrf_cookie(response)
-
-        csrf_protect.set_csrf_cookie(signed_token, response)
-
         return response
     except Exception as e:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        return handle_error(
+        csrf_token, signed_token = csrf_token_for(request, csrf_protect)
+        response = handle_error(
             "pages/user.html",
             {
                 "request": request,
@@ -383,3 +389,5 @@ async def delete_user(
             e,
             fragment=USER_LIST,
         )
+        set_csrf_cookie(csrf_protect, response, signed_token)
+        return response

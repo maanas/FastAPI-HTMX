@@ -10,6 +10,7 @@ from app.database.security import (
     verify_jwt,
 )
 from app.models.users import User as UserModelDB
+from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
 from app.templates import templates
 
 # Create an APIRouter
@@ -23,7 +24,7 @@ async def get_dashboard(
     user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
-    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+    csrf_token, signed_token = csrf_token_for(request, csrf_protect)
 
     # Access the cookies using the Request object
     cookies = request.cookies
@@ -40,7 +41,7 @@ async def get_dashboard(
             "user_type": user.is_superuser,
         },
     )
-    csrf_protect.set_csrf_cookie(signed_token, response)
+    set_csrf_cookie(csrf_protect, response, signed_token)
     return response
 
 
@@ -70,7 +71,7 @@ async def get_login(
     csrf_protect: CsrfProtect = Depends(),
 ):
     current_page = request.url.path.split("/")[-1]
-    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+    csrf_token, signed_token = csrf_token_for(request, csrf_protect)
 
     context = {
         "request": request,
@@ -80,7 +81,7 @@ async def get_login(
 
     response = templates.TemplateResponse(request, "pages/login.html", context)
 
-    csrf_protect.set_csrf_cookie(signed_token, response)
+    set_csrf_cookie(csrf_protect, response, signed_token)
     return response
 
 
@@ -95,12 +96,12 @@ async def get_register(
     csrf_protect: CsrfProtect = Depends(),
 ):
     current_page = request.url.path.split("/")[-1]
-    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+    csrf_token, signed_token = csrf_token_for(request, csrf_protect)
     context = {
         "request": request,
         "current_page": current_page,
         "csrf_token": csrf_token,
     }
     response = templates.TemplateResponse(request, "pages/register.html", context)
-    csrf_protect.set_csrf_cookie(signed_token, response)
+    set_csrf_cookie(csrf_protect, response, signed_token)
     return response
