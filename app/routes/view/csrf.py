@@ -43,3 +43,15 @@ def set_csrf_cookie(
     """Set the CSRF cookie when `csrf_token_for` made a new pair; else do nothing."""
     if signed_token:
         csrf_protect.set_csrf_cookie(signed_token, response)
+
+
+def rotate_csrf_cookie(response: Response) -> None:
+    """Replace the CSRF cookie on `response` with a new pair.
+
+    The token is not tied to a user, so a cookie that existed before login (planted
+    through a sibling subdomain or plain http) would stay valid after it. Login
+    calls this so the signed-in session starts with a pair only the server made.
+    """
+    csrf_protect = CsrfProtect()
+    _, signed = csrf_protect.generate_csrf_tokens()
+    csrf_protect.set_csrf_cookie(signed, response)
