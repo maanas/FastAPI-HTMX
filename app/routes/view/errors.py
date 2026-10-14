@@ -157,10 +157,14 @@ def handle_error(
 
     Args:
         template (str): The name of the template to render.
-        context (dict): This is a dictionary containing the data that will be passed to the template.
-        It should include the request object and any database objects that need to be rendered in the template.
-        For example, you might pass {"request": request, "group": await group_crud.read_by_primary_key(db, group_id)} as the context.
-        error (Exception): This is the exception that was raised during the execution of your code.
+        context (dict): This is a dictionary containing the data that will be
+            passed to the template.
+        It should include the request object and any database objects that need
+        to be rendered in the template.
+        For example, you might pass {"request": request, "group": await
+        group_crud.read_by_primary_key(db, group_id)} as the context.
+        error (Exception): This is the exception that was raised during the
+            execution of your code.
         fragment (str, optional): The fragment for `template` (a page). An HTMX request
         gets the fragment, any other request gets `template`: no shell nested in a swap.
 

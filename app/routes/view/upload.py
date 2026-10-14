@@ -3,7 +3,6 @@ import re
 import uuid
 from urllib.parse import quote
 
-import nh3
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.routing import APIRouter
@@ -12,6 +11,7 @@ from loguru import logger
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.core.minio_core import minio
+from app.core.text import clean_text
 from app.database.db import CurrentAsyncSession
 from app.database.security import current_active_user
 from app.models.upload import Upload as UploadsModelDB
@@ -199,8 +199,8 @@ async def post_upload_file(
                 raise HTTPException(status_code=400, detail="No file was uploaded")
             if not file.filename:
                 raise HTTPException(status_code=400, detail="Filename is missing")
-            # FileBase.validate_file_size intends this limit but the shared schema code
-            # drops it, so it is enforced here, before anything is stored
+            # The same limit as FileBase.validate_file_size, checked here before the
+            # schema is built or anything is stored
             if not file.size:
                 raise HTTPException(status_code=400, detail="The file is empty")
             if file.size > MAX_FILE_SIZE:
@@ -216,10 +216,10 @@ async def post_upload_file(
 
             # Validate (type, name) before anything is stored
             file_create = FileCreate(
-                name=nh3.clean(str(file.filename)),
+                name=clean_text(file.filename),
                 unique_name=unique_name,
-                file_type=nh3.clean(str(file.content_type)),
-                source=nh3.clean(str(form.get("source"))),
+                file_type=clean_text(file.content_type),
+                source=clean_text(form.get("source")),
                 file_size=file.size,
                 user_id=user_id,
             )

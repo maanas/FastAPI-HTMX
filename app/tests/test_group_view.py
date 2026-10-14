@@ -345,7 +345,7 @@ async def test_rename_to_an_existing_name_is_an_error_not_a_500(
     other = await make_group(db_session, created_groups, name=GROUP_NAME + "-other")
     token = await csrf_token_from(client)
     response = await client.put(
-        f"/post_update_group{other.id}",
+        f"/post_update_group/{other.id}",
         data={"group_name": GROUP_NAME, "group_desc": "Another group"},
         headers={**HX, "X-CSRF-Token": token},
     )
@@ -363,7 +363,7 @@ async def test_update_keeps_the_own_name_and_redirects(
     group_id = group.id
     token = await csrf_token_from(client)
     response = await client.put(
-        f"/post_update_group{group_id}",
+        f"/post_update_group/{group_id}",
         data={"group_name": GROUP_NAME, "group_desc": "A new description"},
         headers={**HX, "X-CSRF-Token": token},
     )
@@ -380,7 +380,7 @@ async def test_update_without_the_token_shows_no_group_data(
 ):
     group = await make_group(db_session, created_groups, desc="Secret description")
     response = await client.put(
-        f"/post_update_group{group.id}",
+        f"/post_update_group/{group.id}",
         data={"group_name": "typed-name", "group_desc": "Changed"},
         headers=HX,
     )
@@ -532,7 +532,7 @@ async def test_a_name_differing_only_in_case_is_refused(
     assert "already exists" in created.text
 
     renamed = await client.put(
-        f"/post_update_group{other_id}",
+        f"/post_update_group/{other_id}",
         data={"group_name": upper, "group_desc": "A test group"},
         headers={**HX, "X-CSRF-Token": token},
     )
@@ -628,3 +628,47 @@ async def test_a_failed_allocation_with_a_real_user_row_is_not_a_500(
     assert response.status_code == 400
     assert "HX-Location" not in response.headers
     assert 'id="create-group-form"' in response.text
+
+
+async def test_ampersand_in_a_group_round_trips_and_shows_once_escaped(
+    client, logged_in, db_session, created_groups
+):
+    token = await csrf_token_from(client)
+    created = await client.post(
+        "/post_create_group",
+        data={"group_name": GROUP_NAME, "group_desc": "Tom & Jerry <b>x</b> a < b"},
+        headers={**HX, "X-CSRF-Token": token},
+    )
+    assert "HX-Location" in created.headers
+    db_session.expire_all()
+    row = (
+        await db_session.execute(select(Group).where(Group.group_name == GROUP_NAME))
+    ).scalar_one()
+    created_groups.append(row.id)
+    # Stored as typed, tags stripped, nothing entity-encoded
+    assert row.group_desc == "Tom & Jerry x a < b"
+    page = await client.get("/groups")
+    assert "Tom &amp; Jerry x a &lt; b" in page.text
+    assert "&amp;amp;" not in page.text
+
+
+async def test_a_missing_group_desc_is_stored_empty_not_as_none_text(
+    client, logged_in, db_session, created_groups
+):
+    token = await csrf_token_from(client)
+    created = await client.post(
+        "/post_create_group",
+        data={"group_name": GROUP_NAME},
+        headers={**HX, "X-CSRF-Token": token},
+    )
+    assert "HX-Location" in created.headers
+    db_session.expire_all()
+    row = (
+        await db_session.execute(select(Group).where(Group.group_name == GROUP_NAME))
+    ).scalar_one()
+    created_groups.append(row.id)
+    assert row.group_desc is None
+
+
+def test_the_update_route_path_has_a_slash():
+    assert app.url_path_for("post_update_group", group_id="7") == "/post_update_group/7"

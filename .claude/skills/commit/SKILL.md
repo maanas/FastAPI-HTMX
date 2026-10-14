@@ -11,7 +11,7 @@ description: Creates a local git commit in this repo's message style from the cu
    - anything under `theme/flowbite/` other than the submodule pointer
    - large binaries that are not a vendored asset listed in `VENDORED.md`
 3. Stage only the files that belong to this step (`git add <paths>`; never `git add -A` unless every change belongs). A vendored file goes in together with its `VENDORED.md` row, a model change together with its migration.
-4. Write the message in the repo's style (see `git log --format=%s -5 chore/starter-setup`):
+4. Write the message in the repo's style (see `git log --format=%s -5 main`):
    - summary: `type: what changed`, e.g. `feat: vendor htmx 2 and Alpine under app/static`, at most 72 characters; types are `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `build`
    - plain hyphens and straight quotes only; no em dashes, no emoji codes
    - body only when the why is not obvious

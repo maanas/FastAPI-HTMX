@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRouter
 from fastapi_csrf_protect import CsrfProtect
 
+from app.core.text import clean_text
 from app.database.db import CurrentAsyncSession
 from app.database.security import current_active_user
 from app.models.users import Role as RoleModelDB
@@ -57,13 +58,16 @@ async def get_users(
 
     Args:
         request (Request): The request object.
-        current_user (UserModelDB): The current user object obtained from the current_active_user dependency.
+        current_user (UserModelDB): The current user object obtained from the
+            current_active_user dependency.
 
     Returns:
-        TemplateResponse: The HTML response containing the "partials/add_user.html" template.
+        TemplateResponse: The HTML response containing the
+            "partials/add_user.html" template.
 
     Raises:
-        HTTPException: If the current user is not a superuser, with a 403 Forbidden status code.
+        HTTPException: If the current user is not a superuser, with a 403
+            Forbidden status code.
     """
     try:
         if not current_user.is_superuser:
@@ -122,13 +126,15 @@ async def get_create_users(
 
     Args:
         request (Request): The incoming HTTP request object.
-        current_user (UserModelDB): The currently authenticated user object, obtained from the current_active_user dependency.
+        current_user (UserModelDB): The currently authenticated user object,
+            obtained from the current_active_user dependency.
 
     Returns:
         TemplateResponse: The rendered HTML template for creating a new user.
 
     Raises:
-        HTTPException: If the current user is not a superuser, with a 403 Forbidden status code and a detail message.
+        HTTPException: If the current user is not a superuser, with a 403
+            Forbidden status code and a detail message.
     """
     # checking the current user as super user
     try:
@@ -252,17 +258,18 @@ async def post_update_user(
             raise HTTPException(
                 status_code=422, detail="Date of birth or role is not valid"
             )
-        # Iterate over the form fields and sanitize the values before validating against the Pydantic model
+        # Iterate over the form fields and sanitize the values before validating against
+        # the Pydantic model
         profile_data = ProfileUpdate(
-            first_name=nh3.clean(str(form.get("first_name"))),
-            last_name=nh3.clean(str(form.get("last_name"))),
-            gender=nh3.clean(str(form.get("gender"))),
+            first_name=clean_text(form.get("first_name")),
+            last_name=clean_text(form.get("last_name")),
+            gender=clean_text(form.get("gender")),
             date_of_birth=date_of_birth,
-            address=nh3.clean(str(form.get("address"))),
-            city=nh3.clean(str(form.get("city"))),
-            country=nh3.clean(str(form.get("country"))),
-            phone=nh3.clean(str(form.get("phone"))),
-            company=nh3.clean(str(form.get("company"))),
+            address=clean_text(form.get("address")),
+            city=clean_text(form.get("city")),
+            country=clean_text(form.get("country")),
+            phone=clean_text(form.get("phone")),
+            company=clean_text(form.get("company")),
         )
 
         if role_id is None:
@@ -290,7 +297,10 @@ async def post_update_user(
                     {
                         "showAlert": {
                             "type": "updated",
-                            "message": f"Profile for {profile_data.first_name} {profile_data.last_name} updated successfully.",
+                            "message": (
+                                f"Profile for {profile_data.first_name} "
+                                f"{profile_data.last_name} updated successfully."
+                            ),
                             "source": "user-page",
                         },
                     }
@@ -315,7 +325,10 @@ async def post_update_user(
                     {
                         "showAlert": {
                             "type": "updated",
-                            "message": f"Profile for {profile_data.first_name} {profile_data.last_name} updated successfully.",
+                            "message": (
+                                f"Profile for {profile_data.first_name} "
+                                f"{profile_data.last_name} updated successfully."
+                            ),
                             "source": "user-page",
                         },
                     }

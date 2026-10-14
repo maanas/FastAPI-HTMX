@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import Depends, FastAPI
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 from fastapi.staticfiles import StaticFiles
@@ -27,9 +30,20 @@ from fastapi_csrf_protect import CsrfProtect
 from app.core.csrf_settings import CsrfSettings, crsf_settings
 from app.core.security_headers import SecurityHeadersMiddleware
 
+APP_DIR = Path(__file__).resolve().parent
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    logger.info("Application started")
+    yield
+    logger.info("Application shutdown")
+
+
 # The API docs pages load Swagger UI from a CDN with an inline script: both are
 # refused by the content security policy and the no-CDN rule, so they are off
 app = FastAPI(
+    lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
@@ -39,7 +53,7 @@ app = FastAPI(
         CsrfProtectError: csrf_error_handler,
     }
 )
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 # HSTS only when the site is served over HTTPS (COOKIE_SECURE)
 app.add_middleware(SecurityHeadersMiddleware, hsts=crsf_settings.cookie_secure)
 
@@ -93,16 +107,6 @@ app.include_router(upload_view_route, tags=["Pages", "Upload"])
 async def authenticated_route(user: User = Depends(current_active_user)):
     logger.info(user.id)
     return {"message": f"Hello {user.email}!"}
-
-
-@app.on_event("startup")
-async def on_startup():
-    logger.info("Application started")
-
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    logger.info("Application shutdown")
 
 
 @CsrfProtect.load_config

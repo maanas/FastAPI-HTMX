@@ -16,6 +16,8 @@ from .error_asserts import CSRF_MESSAGE, after_title, alert_message
 
 pytestmark = pytest.mark.anyio
 
+APP_DIR = Path(__file__).resolve().parents[1]
+
 HX = {"HX-Request": "true"}
 EMAIL = "pytest-user-view@example.com"
 
@@ -236,7 +238,7 @@ async def test_profile_update_message_names_the_user(
 
 
 def phone_pattern():
-    template = Path("app/templates/partials/user/edit_user.html").read_text()
+    template = (APP_DIR / "templates/partials/user/edit_user.html").read_text()
     return re.search(r'id="phone"[^>]*? pattern="([^"]+)"', template).group(1)
 
 
@@ -260,5 +262,5 @@ def test_phone_pattern_rejects_bad_numbers(number):
 
 
 def test_phone_input_limits_its_length():
-    template = Path("app/templates/partials/user/edit_user.html").read_text()
+    template = (APP_DIR / "templates/partials/user/edit_user.html").read_text()
     assert re.search(r'id="phone"[^>]*? maxlength="15"', template)

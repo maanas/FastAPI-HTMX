@@ -4,7 +4,7 @@ import pytest
 from loguru import logger
 from sqlalchemy import delete, func, select
 
-from app.app import on_startup
+from app.app import app, lifespan
 from app.commands.create_superuser import create_or_promote_superuser
 from app.core.auth_settings import AuthSettings, get_auth_secret, validate_auth_secret
 from app.models.users import User
@@ -152,7 +152,8 @@ async def test_startup_creates_no_default_superuser(db_session):
         )
 
     before = await count()
-    await on_startup()
+    async with lifespan(app):
+        pass
     after = await count()
     assert after == before
 

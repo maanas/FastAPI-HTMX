@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, pass_context, select_autoescape
+
+APP_DIR = Path(__file__).resolve().parent
 
 
 @pass_context
@@ -12,7 +16,7 @@ def path_for(context, name, **params):
 # Jinja2 environment: auto-reload on, HTML autoescape on (`{{ value }}` is escaped;
 # use `| tojson` inside a JS or JSON attribute, `| safe` only for server-made HTML)
 jinja_env = Environment(
-    loader=FileSystemLoader("app/templates"),
+    loader=FileSystemLoader(APP_DIR / "templates"),
     auto_reload=True,
     autoescape=select_autoescape(["html", "xml"]),
 )

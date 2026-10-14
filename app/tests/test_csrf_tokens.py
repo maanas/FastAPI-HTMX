@@ -122,7 +122,7 @@ FORMS = {
         "/get_group/{group}",
         (
             "put",
-            "/post_update_group{group}",
+            "/post_update_group/{group}",
             {"group_name": GROUP_NAME, "group_desc": "valid text"},
         ),
     ),
