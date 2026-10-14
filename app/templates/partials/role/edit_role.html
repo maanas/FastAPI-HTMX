@@ -15,7 +15,7 @@
     <form
       id="edit-role-form"
       hx-target="#dashboard-body"
-      hx-put="{{ url_for('post_update_role', role_id=role.id) }}"
+      hx-put="{{ path_for('post_update_role', role_id=role.id) }}"
       hx-swap="outerHTML"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
     >
@@ -52,7 +52,7 @@
       <button type="submit" class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none">Update</button>
       <button
         type="button"
-        hx-get="{{ url_for('get_role') }}"
+        hx-get="{{ path_for('get_role') }}"
         hx-target="#dashboard-body"
         hx-swap="outerHTML"
         hx-push-url="true"

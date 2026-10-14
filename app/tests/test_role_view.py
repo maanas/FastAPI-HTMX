@@ -218,3 +218,16 @@ async def test_rename_to_an_existing_name_is_an_error_not_a_500(
         )
     ).scalars()
     assert sorted(names) == [ROLE_NAME, ROLE_NAME + "-other"]
+
+
+async def test_rendered_pages_use_paths_not_absolute_urls(
+    client, logged_in, stored_role
+):
+    attrs = re.compile(r"""\b(?:hx-[\w-]+|href|action)=["']\s*(?:https?:)?//""", re.I)
+    for headers in ({}, HX):
+        for url in ("/role", "/get_create_roles", f"/get_role/{stored_role.id}"):
+            response = await client.get(url, headers=headers)
+            assert response.status_code == 200, url
+            assert not attrs.search(response.text), url
+    # the sidebar (full page) is where the nav links live
+    assert 'hx-get="/role"' in (await client.get("/role")).text

@@ -6,7 +6,7 @@
     <form
       id="create-role-form"
       hx-target="#dashboard-body"
-      hx-post="{{ url_for('post_create_roles') }}"
+      hx-post="{{ path_for('post_create_roles') }}"
       hx-swap="outerHTML"
       hx-push-url="true"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'

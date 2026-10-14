@@ -25,7 +25,7 @@
         id="upload-form"
         class="max-w-lg mb-4"
         hx-encoding="multipart/form-data"
-        hx-post="{{ url_for('post_upload_file') }}"
+        hx-post="{{ path_for('post_upload_file') }}"
         hx-target="#upload-result"
       >
         <label class="block mb-2.5 text-sm font-medium text-heading" for="file_input">Upload file</label>
@@ -71,7 +71,7 @@
           </thead>
           <tbody
             id="upload-files-table"
-            hx-get="{{ url_for('get_uploaded_files') }}"
+            hx-get="{{ path_for('get_uploaded_files') }}"
             hx-target="this"
             hx-swap="innerHTML"
             hx-trigger="refreshUploadTable from:body"

@@ -46,5 +46,13 @@ def test_rule_scanner_sees_attributes_after_an_arrow_in_a_value():
     assert template_rule_violations("<script>x()</script>")
     assert not template_rule_violations(
         '<div data-note="() => {}" @click="go()" x-on:input="go()" '
-        'hx-get="{{ url_for(\'a\') }}"><script src="/a.js"></script></div>'
+        'hx-get="{{ path_for(\'a\') }}"><script src="/a.js"></script></div>'
+    )
+
+
+def test_rule_scanner_flags_url_for_but_not_the_word_in_text():
+    assert template_rule_violations("<a href=\"{{ url_for('a') }}\">x</a>")
+    assert template_rule_violations("<a href=\"{{ url_for ('a', id=1) }}\">x</a>")
+    assert not template_rule_violations(
+        "<p>do not call url_for( here</p><a href=\"{{ path_for('a') }}\">x</a>"
     )

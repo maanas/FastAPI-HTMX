@@ -14,7 +14,7 @@
     <form
       id="edit-user-form"
       hx-target="#dashboard-body"
-      hx-put="{{ url_for('post_update_user', user_id=user.id) }}"
+      hx-put="{{ path_for('post_update_user', user_id=user.id) }}"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
       hx-swap="outerHTML"
     >
@@ -82,7 +82,7 @@
       <button type="submit" class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none">Update</button>
       <button
         type="button"
-        hx-get="{{ url_for('get_users') }}"
+        hx-get="{{ path_for('get_users') }}"
         hx-confirm="Are you sure you want to cancel the profile update?"
         hx-target="#dashboard-body"
         hx-swap="outerHTML"

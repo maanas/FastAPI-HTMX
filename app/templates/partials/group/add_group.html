@@ -6,7 +6,7 @@
     <form
       id="create-group-form"
       hx-target="#dashboard-body"
-      hx-post="{{ url_for('post_create_group') }}"
+      hx-post="{{ path_for('post_create_group') }}"
       hx-swap="outerHTML"
       hx-push-url="true"
       hx-headers='{{ {"X-CSRF-Token": (csrf_token or '')} | tojson }}'
