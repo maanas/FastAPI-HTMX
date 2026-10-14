@@ -47,8 +47,14 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   `htmx-patterns`: the browser pass method in `reference/browser-pass.md`).
 - The "htmx leftovers" task (2026-10-14, branch `feat/htmx-leftovers`) also rewrote the README
   and replaced the logo (`app/static/img/logo/logo.svg`). The demo GIF section is gone from the
-  README; the file `app/static/img/logo/FastAPI-HTMX.gif` (1.1 MB, old interface) is still in the
-  repo: delete it or record a new one. The ER diagram was not checked against the models.
+  README and its file is deleted (it showed the old interface): record a new one when wanted.
+  The ER diagram was not checked against the models.
+- Six retro proposals were applied with the "htmx leftovers" task on 2026-10-14 (checker:
+  placeholder settings by default, zsh special variable names; coder: no exception object to
+  loguru in a request path, ruff after every fix round, keep the guarantee of a test it rewrites;
+  `htmx-patterns`: the error answers, CSRF helper and exception handler as shipped, and the
+  expected htmx console line in a browser pass; `new-page`: title block, `path_for`,
+  `submitted_form`).
 - Next: the MinIO part of "Browser pass", then "Housekeeping".
 
 ## Change list

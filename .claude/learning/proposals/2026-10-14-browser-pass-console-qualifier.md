@@ -1,6 +1,7 @@
 ---
 id: 2026-10-14-browser-pass-console-qualifier
-status: proposed
+status: applied
+applied: 2026-10-14
 target: skills/htmx-patterns/reference/browser-pass.md
 metric: correctness
 ---

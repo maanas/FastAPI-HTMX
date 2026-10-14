@@ -32,7 +32,7 @@ Markup that arrives in a swap is not bound.
 |---|---|
 | `htmx:configRequest` | Add a header or value to every request |
 | `htmx:afterSettle` | Initialise swapped content; `components.js` reads `HX-Trigger` here to show alerts |
-| `htmx:responseError` | One place to show a toast for 4xx and 5xx |
+| `htmx:responseError` | Error alerts come from the `showAlert` event, with no swap |
 | `htmx:sendError` | Network failure |
 | A name from `HX-Trigger` | Fired on the triggering element and bubbles to `body` |
 

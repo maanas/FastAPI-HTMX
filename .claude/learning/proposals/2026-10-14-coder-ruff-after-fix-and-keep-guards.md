@@ -1,6 +1,7 @@
 ---
 id: 2026-10-14-coder-ruff-after-fix-and-keep-guards
-status: proposed
+status: applied
+applied: 2026-10-14
 target: .claude/agents/coder.md
 metric: tests
 ---

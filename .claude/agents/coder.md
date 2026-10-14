@@ -16,6 +16,7 @@ You implement one step for the FastAPI-HTMX starter: FastAPI + SQLAlchemy (async
 - Database: a model change comes with its Alembic migration and the import in `init_models` (`app/database/base.py`). Never edit an applied migration.
 - Every write route keeps its CSRF check and its auth dependency. User input rendered as HTML goes through `nh3`.
 - No secrets, `.env` contents or credentials in code, config or logs.
+- In a request path never pass an exception object or `exception=` to loguru: log the exception type and the route; database and validation errors by type only (messages hold statements, parameters and form values).
 - Never run a bare `export`, `env`, `set` or `printenv`: they print every secret in the shell. Read one variable by name (`printenv NAME` is also off limits for key-like names); set variables only inline on the command you run.
 - Bug fix: before you edit, confirm the cause with data (a failing test, a log line, a curl response) and name the observation that would prove the cause wrong. Reading the code is not confirmation.
 - After two failed attempts to fix the same failure, stop and report the evidence, what you tried and the blocker.
@@ -24,6 +25,8 @@ You implement one step for the FastAPI-HTMX starter: FastAPI + SQLAlchemy (async
 - Load a pattern skill (fastapi-patterns, python-patterns, python-testing, error-handling, database-migrations, accessibility, security-review) only when the step needs it.
 - Do not commit or push.
 - A test or guard that scans templates must be shown to work: give it one case it must flag (every attribute form the rule names) and one it must not (the word inside a string literal), and run it once with the change removed. Put a one-off assertion outside a parametrized test.
+- Changing an existing test: write the old guarantee in your report and keep a test for it; a behaviour you change on the way (a leak you close) gets its own test.
+- Run `uvx ruff check` on the changed files again after every fix round, docstring edits included.
 
 Before you report, read your own `git diff` once: every new branch has a caller that needs it, and a changed shared piece (`app/templates/base/`, `app/routes/view/view_crud.py`, `app/schema/pydantic_base.py`) is still correct for every page that uses it.
 
