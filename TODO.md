@@ -55,6 +55,8 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   `htmx-patterns`: the error answers, CSRF helper and exception handler as shipped, and the
   expected htmx console line in a browser pass; `new-page`: title block, `path_for`,
   `submitted_form`).
+- One retro proposal was applied with the "MinIO pass" task on 2026-10-14 (checker: run
+  `alembic upgrade head` on the scratch database before creating the superuser).
 - A local MinIO server for a test: `minio/minio` is gone from Docker Hub and `quay.io/minio/minio`
   refuses anonymous pulls (both checked 2026-10-14); `cgr.dev/chainguard/minio:latest` works, the
   command is in the README. The image is still on the Mac Pro, the container is removed.

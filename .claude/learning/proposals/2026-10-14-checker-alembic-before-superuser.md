@@ -1,6 +1,6 @@
 ---
 id: 2026-10-14-checker-alembic-before-superuser
-status: proposed
+status: applied
 target: .claude/agents/checker.md
 metric: no such table: users
 ---
