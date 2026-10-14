@@ -1,3 +1,4 @@
+import enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, Enum, String
@@ -10,7 +11,7 @@ if TYPE_CHECKING:
     from app.models.users import User
 
 
-class Permission(Enum):
+class Permission(str, enum.Enum):
     READ = "read"
     WRITE = "write"
     DELETE = "delete"
@@ -24,8 +25,20 @@ class Group(BaseSQLModel):
     )
     group_desc: Mapped[str | None] = mapped_column(String(length=1024), nullable=True)
 
-    # Creating enum for the permission to be given to the group
-    permission: Mapped[Permission] = mapped_column(Permission, nullable=True)
+    # Permission given to the group: stored as VARCHAR(16) with a CHECK constraint
+    # (ck_group_permission), the same on SQLite and Postgres, no native enum type.
+    permission: Mapped[Permission | None] = mapped_column(
+        Enum(
+            Permission,
+            name="permission",
+            native_enum=False,
+            create_constraint=True,
+            length=16,
+            values_callable=lambda e: [m.value for m in e],
+            validate_strings=True,
+        ),
+        nullable=True,
+    )
 
     users: Mapped[list["User"]] = relationship(
         "User", secondary="group_users", back_populates="groups", uselist=True
