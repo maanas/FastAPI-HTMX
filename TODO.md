@@ -60,11 +60,14 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Three retro proposals were applied with the "Housekeeping" task on 2026-10-14 (checker: never
   test whether `.env` exists, every placeholder setting named, the CSRF token in the
   `X-CSRF-Token` header for write routes; `commit`: message style from `git log main`).
+- One retro proposal was applied with the "`Permission` type" task on 2026-10-14 (checker: the
+  placeholder settings rule stated at the pytest step too).
 - A local MinIO server for a test: `minio/minio` is gone from Docker Hub and `quay.io/minio/minio`
   refuses anonymous pulls (both checked 2026-10-14); `cgr.dev/chainguard/minio:latest` works, the
   command is in the README. The image is still on the Mac Pro, the container is removed.
-- Pull requests #11 to #13 are merged (2026-10-14). "Housekeeping" is on `chore/housekeeping`.
-- Next: the `Permission` type.
+- Pull requests #11 to #14 are merged (2026-10-14). "`Permission` type" is on
+  `fix/permission-type`.
+- Next: decide what medusa takes.
 
 ## Change list
 
@@ -301,9 +304,16 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - `user.py` builds `role_id` as a one-element tuple (`(nh3.clean(...),)`, about line 255).
   - The conftest error path for a failed `alembic upgrade head` was never triggered in a run.
   - Ask upstream to add the MIT LICENSE their README claims (an issue for maanas to open).
-- [ ] **`Permission` type** (`app/models/groups.py`): it subclasses `sqlalchemy.Enum` with no
-  values, so `group.permission` is an unconstrained string and would fail on Postgres as a native
-  enum. Make it a Python `enum.Enum` or a plain string, with its own migration (`0002_...`).
+- [x] **`Permission` type** (2026-10-14, branch `fix/permission-type`): `Permission` in
+  `app/models/groups.py` is a `str, enum.Enum` (read, write, delete, admin), stored as
+  `VARCHAR(16)` with CHECK `ck_group_permission` (no native enum, the same on SQLite and
+  Postgres; owner's choice). Migration `0002_permission_enum` sets any other value to NULL, then
+  changes the type and adds the check; checked up, down and up on SQLite, `alembic check` clean.
+  `app/tests/test_permission.py` proves the check refuses a value after the migrations.
+  Left open by it:
+  - Nothing reads or writes `group.permission` (no form, schema or route).
+  - The migration was not run on Postgres (read only); `alembic upgrade --sql` fails on SQLite
+    because batch mode needs a connection.
 - [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
   `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
   and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
