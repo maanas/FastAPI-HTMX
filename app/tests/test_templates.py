@@ -187,6 +187,13 @@ def test_user_edit_cancel_is_an_htmx_button_with_a_confirm():
     assert "cancelEdit" not in text and "data-list-url" not in text
 
 
+def test_file_delete_button_asks_for_a_confirm():
+    text = (TEMPLATES / "partials/upload/files_table.html").read_text(encoding="utf-8")
+    delete = re.search(r"<button\s[^>]*hx-delete=[^>]*>", text, re.S).group(0)
+    assert 'hx-confirm="Are you sure you want to delete this file?"' in delete
+    assert not template_rule_violations(text)
+
+
 @pytest.mark.parametrize(
     "attr", ['@click="reset"', '@click.prevent="cancel"', 'x-on:click="cancel"']
 )

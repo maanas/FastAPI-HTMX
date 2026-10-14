@@ -42,6 +42,13 @@ class FakeMinio:
         self.fail_upload = False
         self.fail_remove = False
         self.raise_error = None
+        self.bucket_error = None
+        self.bucket_checks = 0
+
+    async def ensure_bucket(self):
+        self.bucket_checks += 1
+        if self.bucket_error:
+            raise self.bucket_error
 
     async def upload_file(self, file, object_name):
         if self.raise_error:
@@ -241,6 +248,8 @@ async def test_upload_adds_the_file_to_the_table(
     trigger = json.loads(response.headers["HX-Trigger"])
     assert "refreshUploadTable" in trigger
     assert trigger["showAlert"]["source"] == "upload-page"
+    assert trigger["showAlert"]["message"] == f"{FILE_NAME} uploaded successfully."
+    assert "http" not in trigger["showAlert"]["message"]
     assert len(fake_minio.objects) == 1
     assert await stored_names(db_session, stored_user.id) == [FILE_NAME]
     table = await client.get("/get_uploaded_files", headers=HX)
@@ -798,3 +807,71 @@ async def test_the_storage_detail_goes_to_the_log(
     finally:
         logger.remove(sink)
     assert any("minio.invalid" in line for line in lines)
+
+
+async def test_a_failed_bucket_check_answers_503_and_stores_nothing(
+    client, logged_in, db_session, stored_user, fake_minio
+):
+    fake_minio.bucket_error = STORAGE_HOST_ERROR
+    token = await csrf_token_from(client)
+    response = await post_file(client, token)
+    assert_storage_unavailable(response)
+    assert "HX-Trigger" not in response.headers
+    assert fake_minio.bucket_checks == 1
+    assert fake_minio.objects == {}
+    assert await stored_names(db_session, stored_user.id) == []
+
+
+class StubSdk:
+    """The MinIO SDK client behind MinioClient: a bucket set and a call log."""
+
+    def __init__(self, buckets=(), fail=None):
+        self.buckets = set(buckets)
+        self.fail = fail
+        self.calls = []
+
+    def bucket_exists(self, name):
+        self.calls.append("exists")
+        if self.fail:
+            raise self.fail
+        return name in self.buckets
+
+    def make_bucket(self, name):
+        self.calls.append("make")
+        self.buckets.add(name)
+
+
+async def test_ensure_bucket_creates_a_missing_bucket_and_checks_once():
+    from app.core.minio_core import MinioClient
+
+    real = MinioClient()
+    real.minio_client = StubSdk()
+    await real.ensure_bucket()
+    assert real.bucket_name in real.minio_client.buckets
+    assert real.minio_client.calls == ["exists", "make"]
+    await real.ensure_bucket()
+    assert real.minio_client.calls == ["exists", "make"]
+
+
+async def test_ensure_bucket_does_not_remember_a_failure():
+    from app.core.minio_core import MinioClient
+
+    real = MinioClient()
+    real.minio_client = StubSdk(buckets=[real.bucket_name], fail=STORAGE_HOST_ERROR)
+    with pytest.raises(ConnectionError):
+        await real.ensure_bucket()
+    assert real.bucket_ready is False
+    real.minio_client.fail = None
+    await real.ensure_bucket()
+    assert real.minio_client.calls == ["exists", "exists"]
+    assert real.bucket_ready is True
+
+
+async def test_the_upload_route_asks_the_client_to_ensure_the_bucket_on_every_upload(
+    client, logged_in, db_session, stored_user, fake_minio
+):
+    token = await csrf_token_from(client)
+    await post_file(client, token)
+    await post_file(client, token)
+    assert fake_minio.bucket_checks == 2  # the memo lives on the real client
+    assert len(fake_minio.objects) == 2
