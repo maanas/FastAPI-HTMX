@@ -264,7 +264,11 @@ async def test_a_database_error_logs_its_type_but_not_statement_or_values(
     assert "IntegrityError (driver: IntegrityError)" in log
     for leaked in (DB_VALUE, "INSERT INTO", "UNIQUE constraint", LOCAL_VALUE):
         assert leaked not in log
-        assert leaked not in response.text
+        if leaked != LOCAL_VALUE:
+            assert leaked not in response.text
+    # The typed description comes back once, in its input, not in the alert text
+    assert response.text.count(LOCAL_VALUE) == 1
+    assert f'value="{LOCAL_VALUE}"' in response.text
 
 
 async def test_a_database_error_in_the_exception_chain_is_not_logged(

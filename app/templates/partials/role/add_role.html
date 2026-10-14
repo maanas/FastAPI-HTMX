@@ -1,5 +1,6 @@
 {# Fragment, no layout. Root id is the sidebar link's hx-target. #}
 {# Form: theme/flowbite/content/forms/input-field.md "Input fields"; alerts.md "Default alert" #}
+{% set f = form or {} %}
 <div id="dashboard-body" class="p-4 sm:ml-64 mt-14">
   <div class="p-4 border-1 border-default border-dashed rounded-base">
     <h1 class="mb-4 text-xl font-semibold text-heading">Add Role</h1>
@@ -16,6 +17,7 @@
           type="text"
           id="role-type"
           name="role_name"
+          value="{{ f.role_name }}"
           placeholder="Project Manager"
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
@@ -27,6 +29,7 @@
           type="text"
           id="role-desc"
           name="role_desc"
+          value="{{ f.role_desc }}"
           placeholder="Project manager is responsible for the planning, execution and closing of any project."
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"

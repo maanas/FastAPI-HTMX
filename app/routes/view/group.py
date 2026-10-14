@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRouter
 from fastapi_csrf_protect import CsrfProtect
+from fastapi_csrf_protect.exceptions import CsrfProtectError
 from sqlalchemy import select
 
 from app.database.db import CurrentAsyncSession
@@ -16,7 +17,13 @@ from app.models.users import Role as UserRoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
 from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
-from app.routes.view.errors import alert_error, handle_error
+from app.routes.view.errors import (
+    alert_error,
+    handle_error,
+    stub_row,
+    submitted_form,
+    submitted_list,
+)
 from app.routes.view.fragments import render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.group import GroupCreate
@@ -287,6 +294,7 @@ async def post_create_group(
             "pages/group_add.html",
             {
                 "request": request,
+                "form": await submitted_form(request),
                 "csrf_token": csrf_token,
                 "user_type": current_user.is_superuser,
             },
@@ -307,6 +315,8 @@ async def post_update_group(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
+    # Read once: the rollback in the error path expires the user object
+    is_superuser = current_user.is_superuser
     group = None
     try:
         await csrf_protect.validate_csrf(request)
@@ -351,14 +361,19 @@ async def post_update_group(
 
         return response
     except Exception as e:
+        # A request stopped by the CSRF check has not read the row: the form is
+        # shown again with what was typed, and no stored value (only to a superuser)
+        if isinstance(e, CsrfProtectError) and is_superuser:
+            group = stub_row(group_id, group_name="", group_desc="")
         csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = handle_error(
             "pages/group_edit.html",
             {
                 "request": request,
                 "group": group,
+                "form": await submitted_form(request),
                 "csrf_token": csrf_token,
-                "user_type": current_user.is_superuser,
+                "user_type": is_superuser,
             },
             e,
             fragment=GROUP_EDIT,
@@ -499,13 +514,11 @@ async def post_group_user_link(
 ):
     # Read once: the rollback in the except path expires the user object
     is_superuser = current_user.is_superuser
-    checked = False
     try:
         await csrf_protect.validate_csrf(request)
         # checking the current user as super user
         if not current_user.is_superuser:
             raise HTTPException(status_code=403, detail="Not authorized to add groups")
-        checked = True
         group, users, group_user_ids = await read_allocation(db, group_id)
         form = await request.form()
 
@@ -587,14 +600,23 @@ async def post_group_user_link(
     except Exception as e:
         # A failed write leaves the session unusable: start over and read the
         # form again; if that fails too, the response is the error alone.
-        # Nothing is read for a request that failed the CSRF or superuser check.
+        # Nothing is read for a request that failed the superuser check.
         group, users, group_user_ids = None, [], []
-        if checked:
+        if is_superuser:
             try:
                 await db.rollback()
                 group, users, group_user_ids = await read_allocation(db, group_id)
             except Exception:
                 pass
+            # The boxes the user ticked win over the stored links; a submitted form
+            # always holds the `all_users` ids, so an empty list means none was sent
+            if group and await submitted_list(request, "all_users"):
+                group_user_ids = []
+                for value in await submitted_list(request, "users_selected"):
+                    try:
+                        group_user_ids.append(uuid.UUID(value))
+                    except ValueError:
+                        pass
         csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = handle_error(
             "pages/group_users.html",

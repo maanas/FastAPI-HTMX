@@ -15,7 +15,7 @@ from app.models.users import Role as RoleModelDB
 from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
 from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
-from app.routes.view.errors import alert_error, handle_error
+from app.routes.view.errors import alert_error, handle_error, submitted_form
 from app.routes.view.fragments import render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.users import ProfileUpdate
@@ -230,7 +230,8 @@ async def post_update_user(
     current_user: UserModelDB = Depends(current_active_user),
     csrf_protect: CsrfProtect = Depends(),
 ):
-
+    # Read once: the rollback in the error path expires the user object
+    is_superuser = current_user.is_superuser
     try:
         await csrf_protect.validate_csrf(request)
         # checking the current user as super user
@@ -327,14 +328,15 @@ async def post_update_user(
         # A failed write leaves the session unusable: start over and read the form
         # again; if that fails too, the response is the error alone.
         user, roles = None, []
-        try:
-            await db.rollback()
-            user = await user_crud.read_by_primary_key(
-                db, user_id, join_relationships=True
-            )
-            roles = await role_crud.read_all(db)
-        except Exception:
-            pass
+        if is_superuser:
+            try:
+                await db.rollback()
+                user = await user_crud.read_by_primary_key(
+                    db, user_id, join_relationships=True
+                )
+                roles = await role_crud.read_all(db)
+            except Exception:
+                pass
         csrf_token, signed_token = csrf_token_for(request, csrf_protect)
         response = handle_error(
             "pages/user_edit.html",
@@ -342,7 +344,9 @@ async def post_update_user(
                 "request": request,
                 "user": user,
                 "roles": roles,
+                "form": await submitted_form(request),
                 "csrf_token": csrf_token,
+                "user_type": is_superuser,
             },
             e,
             fragment=USER_EDIT,

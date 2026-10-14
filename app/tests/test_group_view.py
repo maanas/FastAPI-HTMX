@@ -381,12 +381,14 @@ async def test_update_without_the_token_shows_no_group_data(
     group = await make_group(db_session, created_groups, desc="Secret description")
     response = await client.put(
         f"/post_update_group{group.id}",
-        data={"group_name": GROUP_NAME, "group_desc": "Changed"},
+        data={"group_name": "typed-name", "group_desc": "Changed"},
         headers=HX,
     )
     assert response.status_code == 403
     assert "HX-Location" not in response.headers
     assert CSRF_MESSAGE in response.text
+    # The form holds what was typed; nothing stored is read for this request
+    assert 'value="typed-name"' in response.text
     assert "Secret description" not in response.text
     assert GROUP_NAME not in response.text
 
@@ -401,7 +403,9 @@ async def test_allocation_without_the_token_shows_no_group_data(
     assert response.status_code == 403
     assert "HX-Location" not in response.headers
     assert CSRF_MESSAGE in response.text
-    assert GROUP_NAME not in response.text
+    # The ticked boxes cannot be shown again without the user list, so a superuser
+    # gets the form back (see test_form_values.py for the boxes)
+    assert 'id="create-group-form"' in response.text
 
 
 async def test_allocation_post_redirects_and_keeps_the_form_on_error(

@@ -1,5 +1,6 @@
 {# Fragment, no layout. Root id is the sidebar link's hx-target. #}
 {# Form: theme/flowbite/content/forms/input-field.md "Input fields"; components/forms.md "Select input"; alerts.md "Default alert" #}
+{% set f = form or {} %}
 <div id="dashboard-body" class="p-4 sm:ml-64 mt-14">
   <div class="p-4 border-1 border-default border-dashed rounded-base">
     {% if not user %}
@@ -22,53 +23,54 @@
       <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
           <label for="first_name" class="block mb-2.5 text-sm font-medium text-heading">First Name</label>
-          <input type="text" id="first_name" name="first_name" placeholder="First Name" value="{{ user.profile.first_name }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="first_name" name="first_name" placeholder="First Name" value="{{ f.get('first_name', user.profile.first_name) }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="last_name" class="block mb-2.5 text-sm font-medium text-heading">Last Name</label>
-          <input type="text" id="last_name" name="last_name" placeholder="Last Name" value="{{ user.profile.last_name }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="last_name" name="last_name" placeholder="Last Name" value="{{ f.get('last_name', user.profile.last_name) }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="gender" class="block mb-2.5 text-sm font-medium text-heading">Gender</label>
           <select id="gender" name="gender" class="block w-full px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body">
-            <option value="male" {{ "selected" if user.profile.gender == "male" }}>Male</option>
-            <option value="female" {{ "selected" if user.profile.gender == "female" }}>Female</option>
-            <option value="other" {{ "selected" if user.profile.gender == "other" }}>Other</option>
+            <option value="male" {{ "selected" if f.get('gender', user.profile.gender) == "male" }}>Male</option>
+            <option value="female" {{ "selected" if f.get('gender', user.profile.gender) == "female" }}>Female</option>
+            <option value="other" {{ "selected" if f.get('gender', user.profile.gender) == "other" }}>Other</option>
           </select>
         </div>
         <div>
           <label for="dob" class="block mb-2.5 text-sm font-medium text-heading">Date of Birth</label>
-          <input type="date" id="dob" name="dob" placeholder="Date of Birth (YYYY-MM-DD)" value="{{ user.profile.date_of_birth.strftime('%Y-%m-%d') if user.profile.date_of_birth }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="date" id="dob" name="dob" placeholder="Date of Birth (YYYY-MM-DD)" value="{{ f.get('dob', user.profile.date_of_birth.strftime('%Y-%m-%d') if user.profile.date_of_birth else '') }}" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="address" class="block mb-2.5 text-sm font-medium text-heading">Address</label>
-          <input type="text" id="address" name="address" placeholder="Primary Address" value="{{ user.profile.address }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="address" name="address" placeholder="Primary Address" value="{{ f.get('address', user.profile.address) }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="city" class="block mb-2.5 text-sm font-medium text-heading">City</label>
-          <input type="text" id="city" name="city" placeholder="City" value="{{ user.profile.city }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="city" name="city" placeholder="City" value="{{ f.get('city', user.profile.city) }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="country" class="block mb-2.5 text-sm font-medium text-heading">Country</label>
-          <input type="text" id="country" name="country" placeholder="Country" value="{{ user.profile.country }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="country" name="country" placeholder="Country" value="{{ f.get('country', user.profile.country) }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
         <div>
           <label for="phone" class="block mb-2.5 text-sm font-medium text-heading">Phone number:</label>
-          <input type="text" id="phone" name="phone" value="{{ user.profile.phone }}" aria-describedby="helper-text-explanation" pattern="\+?[0-9 \(\)\-]{7,15}" maxlength="15" placeholder="USA: (123) 456-7890 or UK: 01234 567890 or Australia: 0412 345 678" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="phone" name="phone" value="{{ f.get('phone', user.profile.phone) }}" aria-describedby="helper-text-explanation" pattern="\+?[0-9 \(\)\-]{7,15}" maxlength="15" placeholder="USA: (123) 456-7890 or UK: 01234 567890 or Australia: 0412 345 678" required class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
           <p id="helper-text-explanation" class="mt-2.5 text-sm text-body">Digits, spaces, parentheses and hyphens, with an optional leading +.</p>
         </div>
         <div>
           <label for="company" class="block mb-2.5 text-sm font-medium text-heading">Company</label>
-          <input type="text" id="company" name="company" placeholder="Company" value="{{ user.profile.company }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
+          <input type="text" id="company" name="company" placeholder="Company" value="{{ f.get('company', user.profile.company) }}" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" />
         </div>
       </div>
       <h2 class="mb-4 mt-8 text-xl font-semibold text-heading">Role Allocation</h2>
       <div class="mb-6 md:w-1/2">
         <label for="role-selection" class="block mb-2.5 text-sm font-medium text-heading">Role Selection</label>
         <select id="role-selection" name="role_id" required class="block w-full px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body">
+          {% set selected_role = f.get('role_id', (user.role.id|string) if user.role else '') %}
           <option value="">Select a role</option>
           {% for role in roles %}
-          <option value="{{ role.id }}" {% if user.role and user.role.id == role.id %}selected{% endif %}>{{ role.role_name }}</option>
+          <option value="{{ role.id }}" {% if role.id|string == selected_role %}selected{% endif %}>{{ role.role_name }}</option>
           {% endfor %}
         </select>
       </div>

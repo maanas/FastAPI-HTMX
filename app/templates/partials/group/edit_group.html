@@ -1,5 +1,6 @@
 {# Fragment, no layout. Root id is the sidebar link's hx-target. #}
 {# Form: theme/flowbite/content/forms/input-field.md "Input fields"; alerts.md "Default alert" #}
+{% set f = form or {} %}
 <div id="dashboard-body" class="p-4 sm:ml-64 mt-14">
   <div class="p-4 border-1 border-default border-dashed rounded-base">
     {% if not group %}
@@ -26,7 +27,7 @@
           id="group-type"
           name="group_name"
           placeholder="Project Manager"
-          value="{{ group.group_name }}"
+          value="{{ f.get('group_name', group.group_name) }}"
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
         />
@@ -37,7 +38,7 @@
           type="text"
           id="group-desc"
           name="group_desc"
-          value="{{ group.group_desc or '' }}"
+          value="{{ f.get('group_desc', group.group_desc or '') }}"
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
         />
