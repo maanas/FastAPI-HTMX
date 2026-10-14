@@ -17,7 +17,7 @@ from app.database.security import current_active_user
 from app.models.groups import Group, UserGroupLink
 from app.models.users import User, UserProfile
 
-from .error_asserts import CSRF_MESSAGE, alert_message
+from .error_asserts import CSRF_MESSAGE, after_title, alert_message
 
 pytestmark = pytest.mark.anyio
 
@@ -109,7 +109,7 @@ def assert_fragment(response, root=True, vary=True, status=200):
     assert "<aside" not in response.text
     assert "<html" not in response.text
     if root:
-        assert response.text.lstrip().startswith('<div id="dashboard-body"')
+        assert after_title(response.text).startswith('<div id="dashboard-body"')
         assert response.text.count('id="dashboard-body"') == 1
     if vary:
         assert "HX-Request" in response.headers["vary"]

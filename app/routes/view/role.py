@@ -20,7 +20,7 @@ from app.routes.view.errors import (
     stub_row,
     submitted_form,
 )
-from app.routes.view.fragments import render_view, wants_fragment
+from app.routes.view.fragments import CONTENT_TARGET_ID, render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.users import RoleCreate
 
@@ -32,7 +32,7 @@ ROLE_ADD = "partials/role/add_role.html"
 ROLE_EDIT = "partials/role/edit_role.html"
 # Navigation that replaces the content area, as the sidebar link does
 HX_LOCATION_ROLES = json.dumps(
-    {"path": "/role", "target": "#dashboard-body", "swap": "outerHTML"}
+    {"path": "/role", "target": f"#{CONTENT_TARGET_ID}", "swap": "outerHTML"}
 )
 
 

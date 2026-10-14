@@ -329,16 +329,14 @@ async def test_a_rendered_error_carries_the_marker_and_others_do_not(client, log
     assert rendered.status_code == 404
     assert rendered.headers[ERROR_RENDERED_HEADER] == "1"
 
-    # The JSON 403 of csrf_error_handler, and a 404 for a path with no route
+    # The JSON 403 of csrf_error_handler (the 404 page of an unknown path is a
+    # rendered error and has the marker, see test_not_found.py)
     refused = await client.post(
         "/auth/jwt/login", data={"username": "a@example.com", "password": "x"}
     )
     assert refused.status_code == 403
     assert refused.headers["content-type"].startswith("application/json")
     assert ERROR_RENDERED_HEADER not in refused.headers
-    missing = await client.get("/no-such-page", headers=HX)
-    assert missing.status_code >= 400
-    assert ERROR_RENDERED_HEADER not in missing.headers
 
     # An alert answer is never swapped
     alert = alert_error(HTTPException(404, "Gone"), "role-page")

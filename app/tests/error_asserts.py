@@ -1,8 +1,14 @@
 """What a refused action inside a list answers, shared by the view tests."""
 
 import json
+import re
 
 from app.routes.view.errors import CSRF_MESSAGE, UNEXPECTED_MESSAGE  # noqa: F401
+
+
+def after_title(text):
+    """A fragment answer without its leading `<title>` (see base/fragment.html)."""
+    return re.sub(r"^\s*<title>.*?</title>\s*", "", text, count=1, flags=re.S)
 
 
 def alert_message(response):

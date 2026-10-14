@@ -20,6 +20,7 @@ from app.models.groups import Group, UserGroupLink
 from app.models.users import Role, User, UserProfile
 from app.routes.view import role as role_routes
 from app.routes.view.errors import (
+    CSRF_MESSAGE,
     UNEXPECTED_MESSAGE,
     describe_exception,
     submitted_form,
@@ -448,8 +449,12 @@ async def test_a_normal_user_gets_no_stored_data_from_a_write_route(
         headers=headers,
     )
     assert response.status_code == 403
+    # The reason: the role check when a token was sent, the CSRF check when not
+    assert ("Not authorized" in response.text) is token
+    assert (CSRF_MESSAGE in response.text) is not token
     stored = [
         STORED_ROLE,
+        "pytest-form-user-role",
         "stored role description",
         STORED_GROUP,
         "stored group description",

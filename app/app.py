@@ -1,7 +1,8 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
+from starlette.exceptions import HTTPException
 
 from app.database.db import User
 from app.database.security import (
@@ -33,6 +34,7 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
     exception_handlers={
+        # Starlette's class: FastAPI's HTTPException and the router's 404 are covered
         HTTPException: http_exception_handler,
         CsrfProtectError: csrf_error_handler,
     }

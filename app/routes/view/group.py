@@ -24,7 +24,7 @@ from app.routes.view.errors import (
     submitted_form,
     submitted_list,
 )
-from app.routes.view.fragments import render_view, wants_fragment
+from app.routes.view.fragments import CONTENT_TARGET_ID, render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.group import GroupCreate
 from app.schema.group import GroupUserLink as GroupUserLinkCreate
@@ -40,7 +40,7 @@ GROUP_USERS = "partials/group/add_group_user.html"
 GROUP_USER_PROFILE = "partials/group/group_user_profile.html"
 # Navigation that replaces the content area, as the sidebar link does
 HX_LOCATION_GROUPS = json.dumps(
-    {"path": "/groups", "target": "#dashboard-body", "swap": "outerHTML"}
+    {"path": "/groups", "target": f"#{CONTENT_TARGET_ID}", "swap": "outerHTML"}
 )
 
 

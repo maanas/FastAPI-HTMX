@@ -298,6 +298,8 @@ async def test_login_valid_pair_good_credentials_is_204_with_cookie(client, user
 async def test_login_valid_pair_bad_credentials_is_400(client, users):
     response, _ = await login(client, users["other"], "wrong-password-value")
     assert response.status_code == 400
+    # What the login script reads: the library's detail, not a fixed text
+    assert response.json() == {"detail": "LOGIN_BAD_CREDENTIALS"}
     assert COOKIE not in response.headers.get("set-cookie", "")
 
 
@@ -414,15 +416,16 @@ async def test_users_router_refuses_a_self_delete(client, users, db_session, for
 async def test_users_router_leaves_a_non_uuid_to_the_library(client, users):
     _, headers = await login(client, users["admin"])
     lines: list[str] = []
-    sink = logger.add(lines.append, level="ERROR")
+    sink = logger.add(lines.append, level="WARNING")
     try:
         response = await client.delete("/users/not-a-uuid", headers=headers)
     finally:
         logger.remove(sink)
-    # The library answers 404 (an unparseable id); the app's handler shows 400.
+    # The library answers 404 (an unparseable id) and the handler keeps it.
     # Our own guard would log "cannot delete your own account" instead.
-    assert response.status_code == 400
-    assert "Not Found : 404" in "".join(lines)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Not Found"}
+    assert "HTTP 404: DELETE /users/not-a-uuid" in "".join(lines)
     assert "own account" not in "".join(lines)
 
 

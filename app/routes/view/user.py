@@ -16,7 +16,7 @@ from app.models.users import User as UserModelDB
 from app.models.users import UserProfile as UserProfileModelDB
 from app.routes.view.csrf import csrf_token_for, set_csrf_cookie
 from app.routes.view.errors import alert_error, handle_error, submitted_form
-from app.routes.view.fragments import render_view, wants_fragment
+from app.routes.view.fragments import CONTENT_TARGET_ID, render_view, wants_fragment
 from app.routes.view.view_crud import SQLAlchemyCRUD
 from app.schema.users import ProfileUpdate
 
@@ -31,7 +31,7 @@ USER_ADD = "partials/user/add_user.html"
 USER_EDIT = "partials/user/edit_user.html"
 # Navigation that replaces the content area, as the sidebar link does
 HX_LOCATION_USERS = json.dumps(
-    {"path": "/user", "target": "#dashboard-body", "swap": "outerHTML"}
+    {"path": "/user", "target": f"#{CONTENT_TARGET_ID}", "swap": "outerHTML"}
 )
 
 

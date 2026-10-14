@@ -13,7 +13,7 @@ from app.database.security import current_active_user
 from app.models.users import Role
 
 from .conftest import TEST_ROLE_PREFIX
-from .error_asserts import CSRF_MESSAGE, alert_message
+from .error_asserts import CSRF_MESSAGE, after_title, alert_message
 
 pytestmark = pytest.mark.anyio
 
@@ -61,7 +61,7 @@ def assert_fragment(response, status=200):
     assert "<nav" not in response.text
     assert "<aside" not in response.text
     assert "<html" not in response.text
-    assert response.text.lstrip().startswith('<div id="dashboard-body"')
+    assert after_title(response.text).startswith('<div id="dashboard-body"')
     assert response.text.count('id="dashboard-body"') == 1
     assert "HX-Request" in response.headers["vary"]
 

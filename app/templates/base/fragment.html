@@ -1,0 +1,3 @@
+{# Wraps a fragment for an HTMX answer. htmx sets document.title from a <title> at the top of the response and removes it from the swap; no fragment file has its own. -#}
+{% if fragment_title %}<title>{{ fragment_title }}</title>
+{% endif %}{% include fragment_template %}
