@@ -16,8 +16,17 @@ document.addEventListener("alpine:init", () => {
       // The token comes from the server in data-csrf-token on the component root
       this.csrfToken = this.$el.dataset.csrfToken || "";
       this.$watch("username", () => this.checkUsername());
-      this.$watch("password", () => this.validatePassword());
-      this.$watch("message", () => this.checkServerError());
+      this.$watch("password", () => {
+        this.validatePassword();
+        this.passwordsMatch();
+      });
+      this.$watch("showServerError", (value) => {
+        if (value) {
+          setTimeout(() => {
+            this.showServerError = false;
+          }, 3000);
+        }
+      });
       this.$watch("repeatPassword", () => this.passwordsMatch());
     },
     get submitDisabled() {
@@ -64,20 +73,15 @@ document.addEventListener("alpine:init", () => {
         this.showPasswordError = false;
       }
     },
-    checkServerError() {
-      if (this.showServerError) {
-        setTimeout(() => {
-          this.showServerError = false;
-        }, 3000);
-      }
-    },
     async registerUser() {
       if (!this.username || !this.password || !this.repeatPassword) {
-        alert("Please fill in all fields");
+        this.message = "Please fill in all fields";
+        this.showServerError = true;
         return;
       }
       if (this.password !== this.repeatPassword) {
-        alert("Passwords do not match");
+        this.message = "Passwords do not match";
+        this.showServerError = true;
         return;
       }
       const formData = {
@@ -102,9 +106,16 @@ document.addEventListener("alpine:init", () => {
         } else if (response.status === 400) {
           this.message = "User already exists";
           this.showServerError = true;
+        } else if (response.status === 403) {
+          this.message = "Your session expired. Reload the page and try again.";
+          this.showServerError = true;
+        } else {
+          this.message = "Registration failed. Try again.";
+          this.showServerError = true;
         }
       } catch (error) {
-        console.error("Error:", error);
+        this.message = "Registration failed. Try again.";
+        this.showServerError = true;
       }
     },
   }));
@@ -147,6 +158,11 @@ document.addEventListener("alpine:init", () => {
     },
 
     setCookie() {
+      if (!this.password) {
+        this.message = "Enter your password";
+        this.showError = true;
+        return;
+      }
       const formData = new URLSearchParams();
       formData.append("grant_type", "password");
       formData.append("username", this.username);
@@ -168,29 +184,20 @@ document.addEventListener("alpine:init", () => {
             // Successful login, navigate to /dashboard
             window.location.href = "/dashboard";
           } else if (response.status === 400) {
-            // Incorrect username or password
             this.message = "Incorrect username or password";
             this.showError = true;
-            return response.text();
+          } else if (response.status === 403) {
+            this.message = "Your session expired. Reload the page and try again.";
+            this.showError = true;
+          } else {
+            this.message = "Login failed. Try again.";
+            this.showError = true;
           }
         })
-        .then((errorMessage) => {
-          if (errorMessage) {
-            console.log(errorMessage);
-          }
+        .catch(() => {
+          this.message = "Login failed. Try again.";
+          this.showError = true;
         });
-    },
-  }));
-});
-
-document.addEventListener("alpine:init", () => {
-  // A required input with its own message: the template sets x-data="requiredMessage",
-  // x-on:htmx:validation:validate="validate" and data-required-message="..."
-  Alpine.data("requiredMessage", () => ({
-    validate() {
-      this.$el.setCustomValidity(
-        this.$el.value === "" ? this.$el.dataset.requiredMessage : "",
-      );
     },
   }));
 });
@@ -252,34 +259,6 @@ document.addEventListener("alpine:init", () => {
     },
     startLoading() {
       this.isLoading = true;
-    },
-  }));
-});
-
-document.addEventListener("alpine:init", () => {
-  // Add role form: a message shows while a field is empty
-  Alpine.data("roleForm", () => ({
-    roleName: "",
-    roleDesc: "",
-    get roleTypeError() {
-      return this.roleName ? "" : "Please enter the Role Type";
-    },
-    get roleDescError() {
-      return this.roleDesc ? "" : "Please enter the Role Description";
-    },
-  }));
-
-  // Edit forms with a Cancel button that resets the form (root element is the form)
-  Alpine.data("resetForm", () => ({
-    reset() {
-      this.$root.reset();
-    },
-  }));
-
-  // Edit user form: Cancel leaves for the user list, its URL is in data-list-url on the form
-  Alpine.data("cancelEdit", () => ({
-    cancel() {
-      window.location.href = this.$root.dataset.listUrl;
     },
   }));
 });

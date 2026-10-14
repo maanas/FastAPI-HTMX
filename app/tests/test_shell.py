@@ -36,6 +36,11 @@ async def test_dashboard_renders_navbar_and_sidebar(client, logged_in):
     assert "admin@example.com" in response.text
 
 
+async def test_dashboard_greets_the_user_by_email(client, logged_in):
+    response = await client.get("/dashboard")
+    assert "Welcome to FastAPI-HTMX! admin@example.com" in response.text
+
+
 async def test_sidebar_shows_admin_links_to_a_superuser(client, logged_in):
     sidebar = (await client.get("/dashboard")).text.split('id="top-bar-sidebar"')[1]
     for link in ADMIN_LINKS:

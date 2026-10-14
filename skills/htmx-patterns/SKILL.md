@@ -24,6 +24,7 @@ description: HTMX 2 patterns for this FastAPI + Jinja2 starter - partial versus 
 | [reference/security.md](reference/security.md) | CSRF, the content security policy, the `htmx-config` meta tag, escaping |
 | [reference/flowbite-alpine.md](reference/flowbite-alpine.md) | Flowbite or Alpine inside swapped content, or JS that listens to htmx events |
 | [reference/testing.md](reference/testing.md) | Testing a route that answers HTMX |
+| [reference/browser-pass.md](reference/browser-pass.md) | Checking a page or a swapped partial in a real browser |
 
 htmx is 2.0.11, vendored at `app/static/vendor/htmx/htmx.min.js` (see `VENDORED.md`). The app's own
 scripts stay in `app/static/js/`.

@@ -1,14 +1,16 @@
+import json
 import re
 import uuid
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from app.app import app
 from app.database.security import current_active_user
-from app.models.users import User, UserProfile
+from app.models.users import Role, User, UserProfile
 
 pytestmark = pytest.mark.anyio
 
@@ -198,3 +200,62 @@ async def test_user_profile_markup_is_escaped_in_the_list(
     response = await client.get("/user", headers=HX)
     assert payload not in response.text
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in response.text
+
+
+async def test_profile_update_message_names_the_user(
+    client, logged_in, stored_user, db_session
+):
+    role = Role(role_name="pytest-update-role")
+    db_session.add(role)
+    await db_session.commit()
+    try:
+        token = await csrf_token_from(client)
+        response = await client.put(
+            f"/post_update_user/{stored_user.id}",
+            headers={**HX, "X-CSRF-Token": token},
+            data={
+                "first_name": "Ada",
+                "last_name": "Lovelace",
+                "gender": "female",
+                "phone": "+44 1234 567890",
+                "role_id": str(role.id),
+            },
+        )
+        assert response.status_code == 200, response.text
+        alert = json.loads(response.headers["HX-Trigger"])["showAlert"]
+        assert alert["message"] == "Profile for Ada Lovelace updated successfully."
+    finally:
+        await db_session.execute(
+            update(User).where(User.id == stored_user.id).values(role_id=None)
+        )
+        await db_session.execute(delete(Role).where(Role.id == role.id))
+        await db_session.commit()
+
+
+def phone_pattern():
+    template = Path("app/templates/partials/user/edit_user.html").read_text()
+    return re.search(r'id="phone"[^>]*? pattern="([^"]+)"', template).group(1)
+
+
+@pytest.mark.parametrize(
+    "number",
+    [
+        "(123) 456-7890",
+        "01234 567890",
+        "0412 345 678",
+        "+44 1234 567890",
+        "123-456-7890",
+    ],
+)
+def test_phone_pattern_accepts_the_placeholder_examples(number):
+    assert re.fullmatch(phone_pattern(), number)
+
+
+@pytest.mark.parametrize("number", ["abc", "12", "1234567890123456"])
+def test_phone_pattern_rejects_bad_numbers(number):
+    assert not re.fullmatch(phone_pattern(), number)
+
+
+def test_phone_input_limits_its_length():
+    template = Path("app/templates/partials/user/edit_user.html").read_text()
+    assert re.search(r'id="phone"[^>]*? maxlength="15"', template)

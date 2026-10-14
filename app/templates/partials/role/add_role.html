@@ -5,7 +5,6 @@
     <h1 class="mb-4 text-xl font-semibold text-heading">Add Role</h1>
     <form
       id="create-role-form"
-      x-data="roleForm"
       hx-target="#dashboard-body"
       hx-post="{{ url_for('post_create_roles') }}"
       hx-swap="outerHTML"
@@ -18,12 +17,10 @@
           type="text"
           id="role-type"
           name="role_name"
-          x-model="roleName"
           placeholder="Project Manager"
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
         />
-        <p x-show="roleTypeError" x-text="roleTypeError" class="mt-2.5 text-sm text-fg-danger"></p>
       </div>
       <div class="mb-6">
         <label for="role-desc" class="block mb-2.5 text-sm font-medium text-heading">Role Description</label>
@@ -31,12 +28,10 @@
           type="text"
           id="role-desc"
           name="role_desc"
-          x-model="roleDesc"
           placeholder="Project manager is responsible for the planning, execution and closing of any project."
           required
           class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
         />
-        <p x-show="roleDescError" x-text="roleDescError" class="mt-2.5 text-sm text-fg-danger"></p>
       </div>
       {% if error_messages %}
       <div id="error-message" class="p-4 mb-4 text-sm text-fg-warning rounded-base bg-warning-soft" role="alert">

@@ -93,6 +93,13 @@ class _RuleScanner(HTMLParser):
                 self.problems.append(f"line {line}: <{tag}> has handler {name}")
             elif name.startswith("hx-on"):
                 self.problems.append(f"line {line}: <{tag}> has htmx handler {name}")
+        if "hx-confirm" in names and any(
+            name == "@click" or name.startswith(("@click.", "x-on:click"))
+            for name in names
+        ):
+            self.problems.append(
+                f"line {line}: <{tag}> has hx-confirm and an Alpine click handler"
+            )
         for name, value in attrs:
             name, value = name.lower(), value or ""
             if name in ("hx-vals", "hx-headers") and JS_VALUE.match(value):
@@ -108,8 +115,8 @@ class _RuleScanner(HTMLParser):
 
 
 def template_rule_violations(text):
-    """Inline scripts, style attributes, on* and hx-on handlers and Alpine attributes
-    the CSP build cannot parse, found in a template."""
+    """Inline scripts, style attributes, on* and hx-on handlers, hx-confirm next to an
+    Alpine click handler, and Alpine attributes the CSP build cannot parse."""
     scanner = _RuleScanner()
     scanner.feed(text)
     scanner.close()

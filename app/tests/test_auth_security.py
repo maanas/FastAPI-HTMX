@@ -425,3 +425,25 @@ async def test_users_router_reads_need_no_csrf(client, users):
     await login(client, users["admin"])
     assert (await client.get("/users/me")).status_code == 200
     assert (await client.get(f"/users/{users['other_id']}")).status_code == 200
+
+
+def test_components_script_has_no_alert_or_console_log():
+    from pathlib import Path
+
+    script = Path("app/static/js/components.js").read_text()
+    assert "alert(" not in script
+    assert "console.log" not in script
+
+
+def test_components_script_shows_every_login_and_register_failure():
+    from pathlib import Path
+
+    script = Path("app/static/js/components.js").read_text()
+    for text in (
+        "Enter your password",
+        "Incorrect username or password",
+        "Your session expired. Reload the page and try again.",
+        "Login failed. Try again.",
+        "Registration failed. Try again.",
+    ):
+        assert text in script
