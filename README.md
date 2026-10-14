@@ -1,109 +1,54 @@
 <p align="center">
-  <img src=app/static/img/logo/logo.jpg width="350">
+  <img src="app/static/img/logo/logo.svg" width="96" alt="FastAPI HTMX starter logo">
 </p>
 
 <h1 align="center">FastAPI HTMX</h1>
 
 <p align="center">
-  Web App providing boilerplate implementation for user management, roles, groups, and CRUD operations using  HTMX, FastAPI and AlpineJS for rapid prototyping and without worrying for the user management.
+  A small starter for server-rendered FastAPI sites: Jinja2 templates with HTMX, Alpine.js,
+  Tailwind CSS v4 and Flowbite v4, with users, roles, groups and file upload already in place.
 </p>
 
-## External Libraries Used
+This is a fork of [Hybridhash/FastAPI-HTMX](https://github.com/Hybridhash/FastAPI-HTMX), reworked
+into a stable base for our own sites. Open work and its order are in [`TODO.md`](TODO.md).
 
-This project leverages several external libraries to provide a robust and efficient solution. Below is a brief description of each library along with a link to their documentation:
+## What is in it
 
-- [FastAPI](https://fastapi.tiangolo.com/) (0.143.0): A modern, fast (high-performance), web framework for building APIs and serving HTML templates with Python 3.6+ based on standard Python type hints.
-- [SQLAlchemy](https://www.sqlalchemy.org/) (2.0.54): The Python SQL toolkit and Object Relational Mapper that gives application developers the full power and flexibility of SQL.
-- [FastAPI Users](https://fastapi-users.github.io/fastapi-users/) (15.0.5): Ready-to-use and customizable users management for FastAPI.
-- [Uvicorn](https://www.uvicorn.org/) (0.54.0): A lightning-fast ASGI server implementation, using `uvloop` and `httptools`.
-- [Jinja2](https://palletsprojects.com/p/jinja/) (3.1.6): A modern and designer-friendly templating language for Python.
-- [NH3](https://github.com/Th3Whit3Wolf/nh3) (0.3.7): A Python binding to the HTML sanitizer `h3`.
-- [Alembic](https://alembic.sqlalchemy.org/en/latest/) (1.20.0): A lightweight database migration tool for usage with the SQLAlchemy Database Toolkit.
-- [AlpineJS](https://alpinejs.dev/) (3.17.4, vendored in `app/static/vendor/`, see `VENDORED.md`): A rugged, minimal framework for composing JavaScript behavior in your HTML templates.
-- [Flowbite](https://flowbite.com/) (JS 4.0.2, vendored in `app/static/vendor/`, see `VENDORED.md`): A component library built on top of Tailwind CSS for building modern web interfaces.
-- [Pydantic](https://docs.pydantic.dev/2.0/) (2.14.1): Data validation and settings management using Python type annotations.
+- Login, register and logout with a cookie session (fastapi-users), and a command that creates the
+  first superuser. The app ships no default account.
+- Roles, groups and users: list, add, edit and delete pages for a superuser, a reduced sidebar for
+  a normal user.
+- File upload, download and delete against MinIO, for the owner of the file only.
+- One shell (Flowbite navbar and sidebar). An HTMX request gets a partial, a full request gets the
+  whole page, from the same route.
+- CSRF protection on every write, including login and register.
+- A strict content security policy: own origin only, no inline script or style, no `eval`.
+- No CDN and no Node: every script, stylesheet and font is a pinned file in the repository.
+- An Alembic migration for the whole schema, and a pytest suite that also guards the templates.
 
-## Features Implemented
+## Tech stack
 
-- User Authentication and Authorization
-- Role Management
-- Group Management
-- Dashboard for managing users, roles, and groups
-- RESTful API endpoints for CRUD operations
-- HTML templates for the web interface
-- Database migrations with Alembic
-- Unified error handling approach.
+| Part | Version | Note |
+| --- | --- | --- |
+| [Python](https://www.python.org/) | 3.12 | |
+| [FastAPI](https://fastapi.tiangolo.com/) | 0.143.0 | served by [Uvicorn](https://www.uvicorn.org/) 0.54.0 |
+| [SQLAlchemy](https://www.sqlalchemy.org/) | 2.0.54 | async, SQLite locally (aiosqlite) |
+| [Alembic](https://alembic.sqlalchemy.org/en/latest/) | 1.20.0 | migrations |
+| [FastAPI Users](https://fastapi-users.github.io/fastapi-users/) | 15.0.5 | users and the login cookie |
+| [fastapi-csrf-protect](https://github.com/aekasitt/fastapi-csrf-protect) | 1.0.7 | CSRF token and cookie |
+| [Pydantic](https://docs.pydantic.dev/) | 2.14.1 | schemas and settings |
+| [Jinja2](https://palletsprojects.com/p/jinja/) | 3.1.6 | templates, autoescape on |
+| [NH3](https://github.com/messense/nh3) | 0.3.7 | sanitises form input |
+| [MinIO client](https://github.com/minio/minio-py) | 7.2.20 | file storage |
+| [htmx](https://htmx.org/) | 2.0.11 | vendored |
+| [Alpine.js](https://alpinejs.dev/) | 3.17.4 | vendored, the CSP build |
+| [Flowbite](https://flowbite.com/) | 4.0.2 | vendored JS, markup from its components |
+| [Tailwind CSS](https://tailwindcss.com/) | 4.3.3 | standalone CLI, build time only |
 
-## To-Do (Future Enhancements)
+Python dependencies are pinned in `pyproject.toml` and locked in `uv.lock`. Vendored files, their
+sources and checksums are listed in [`VENDORED.md`](VENDORED.md).
 
-- 🎨 Implement Theming using Flowbite and Tailwind
-- 🚦 Implement a rate limiter to prevent abuse and ensure fair usage
-- ✅ 📦 Integrate MinIO object storage for efficient file saving and management **[Completed]**
-- 🔑 Add functionality to allow users to update their passwords
-- 🔄 Implement a password reset feature on the login page
-- ⚡ Implement rendering of blocks using FastAPI Fragment instead of reloading complete page or partials **[In Progress]**
-- 📝 Develop a logging service to track and analyze user activity
-- ✅ 🛡️ Implement CSRF protection to enhance security **[Completed]**
-- 💾 Integrate Neon database (SQLite) for production use **[In Progress]**
-- ✅ 🎨 Replace HyperScript code with Alpine JS **[Completed]**
-- ✅ 🚀 Boilerplate code to work with Python 12 and HTMX 2 **[Completed]**
-- ✅ 📱 Fixing the GUI issues appearing in mobile view **[Completed]**
-- 🧪 Add more tests
-- 🔧 Wrapper to handle the pydantic models inputs efficiently from front end **[In Progress]**
-
-## Demo
-
-<p align="center">
-  <img src=app/static/img/logo/FastAPI-HTMX.gif>
-</p>
-
-## Admin User
-
-The app creates no default admin. After `alembic upgrade head`, create one (or promote an existing user):
-
-```bash
-.venv/bin/python -m app.commands.create_superuser
-```
-
-It reads `SUPERUSER_EMAIL` and `SUPERUSER_PASSWORD` from the environment and prompts for a missing value in a terminal. The password needs at least 12 characters.
-
-## Quick Setup Using PowerShell Script
-
-For Windows users, you can use the provided `setup.ps1` script to automate the setup and management of your FastAPI-HTMX project. This script covers all essential project operations. Note: `setup.ps1` still expects poetry and is not updated for uv yet.
-
-### Available Commands
-
-| Command     | Description                         |
-| ----------- | ----------------------------------- |
-| setup       | Complete project setup              |
-| install     | Install dependencies only           |
-| env         | Create .env file                    |
-| migrate     | Run database migrations             |
-| init-db     | Initialize database with migrations |
-| run         | Start the application               |
-| run-dev     | Start in development mode           |
-| credentials | Show admin login credentials        |
-| status      | Show project status                 |
-| clean       | Clean up generated files            |
-
-### Usage
-
-1. **Open PowerShell** and navigate to your project directory:
-   ```powershell
-   cd "C:\Users\mahmad\Desktop\Coding\FastAPI-HTMX"
-   ```
-2. **Run a command** (for example, to set up the project):
-   ```powershell
-   .\setup.ps1 setup
-   ```
-   Or to start the application:
-   ```powershell
-   .\setup.ps1 run
-   ```
-
----
-
-## Setup With uv
+## Setup
 
 You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
@@ -133,10 +78,18 @@ You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
    ```
 
    If you have a database that was created before the migration existed, run
-   `.venv/bin/alembic stamp 0001_initial_schema` once instead. To add the next migration, see
-   `app/migrations/README`.
+   `.venv/bin/alembic stamp 0001_initial_schema` once instead.
 
-5. **Start the application:**
+5. **Create a superuser** (or promote an existing user):
+
+   ```sh
+   .venv/bin/python -m app.commands.create_superuser
+   ```
+
+   It reads `SUPERUSER_EMAIL` and `SUPERUSER_PASSWORD` from the environment and prompts for a
+   missing value in a terminal. The password needs at least 12 characters.
+
+6. **Start the application:**
 
    ```sh
    .venv/bin/python main.py
@@ -144,13 +97,13 @@ You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
    It serves on `http://127.0.0.1:8080`.
 
-6. **Run the tests.** Run them after step 4: they use the database `DATABASE_URL` points to.
+7. **Run the tests.** Run them after step 4: they use the database `DATABASE_URL` points to.
 
    ```sh
    .venv/bin/python -m pytest -q app/tests
    ```
 
-### Environment Variables
+### Environment variables
 
 `.env.example` lists every variable with a placeholder value that works for local development
 over http. Copy it to `.env` and edit it. The app does not start without the variables marked
@@ -166,29 +119,90 @@ required.
 | `MINIO_BUCKET` | yes | MinIO bucket name |
 | `MINIO_SECURE` | no (`false`) | `true` for HTTPS to MinIO. Use it in production |
 | `CSRF_SECRET_KEY` | yes | Signs the CSRF token |
-| `COOKIE_SAMESITE` | yes | CSRF cookie SameSite: lowercase `lax`, `strict` or `none`. `none` needs `COOKIE_SECURE=true` |
+| `COOKIE_SAMESITE` | yes | CSRF and login cookie SameSite: lowercase `lax`, `strict` or `none`. `none` needs `COOKIE_SECURE=true` |
 | `COOKIE_SECURE` | yes | `false` for local http, `true` in production (HTTPS) |
 | `SUPERUSER_EMAIL` | no | Read only by `app.commands.create_superuser` |
 | `SUPERUSER_PASSWORD` | no | Read only by `app.commands.create_superuser`, at least 12 characters |
 
-**Note:** While using placeholder MinIO credentials will allow the database to record file uploads, the actual files won't be stored without valid MinIO server credentials. For full file storage functionality, set up a MinIO server or use valid MinIO service credentials.
+With placeholder MinIO values the app starts and every page works, but an upload answers "File
+storage is not available". For file storage, run a MinIO server and set the four `MINIO_*` values.
 
-## Security headers
+### Windows
 
-Every response (pages, static files, redirects, errors) carries a content security policy that allows
-the own origin only (no inline script or style, no `eval`, no CDN), plus `X-Content-Type-Options`,
-`Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` and `Cross-Origin-Opener-Policy`. The policy
-and the headers are listed in `app/core/security_headers.py`. `Strict-Transport-Security` is sent only
-when `COOKIE_SECURE=true`, never over plain http. htmx runs with `allowEval`, `allowScriptTags`, `includeIndicatorStyles`
-off and `selfRequestsOnly` on (the `htmx-config` meta tag in `base/base.html`). The API docs pages
-(`/docs`, `/redoc`, `/openapi.json`) are off: Swagger UI needs a CDN and an inline script, which the
-policy forbids.
+`setup.ps1` is the upstream helper script. It still expects poetry and the old migration flow and
+has not been updated for uv: follow the steps above instead.
+
+## Project structure
+
+```
+app/
+├── app.py                 FastAPI app, routers, static mount
+├── exception.py           handlers for HTTP and CSRF errors
+├── templates.py           the Jinja2 environment
+├── commands/              create_superuser
+├── core/                  settings (auth, CSRF, MinIO), security headers
+├── database/              engine, session, auth (fastapi-users), init_models
+├── migrations/            Alembic
+├── models/                SQLAlchemy models: users, groups, upload
+├── schema/                Pydantic schemas
+├── routes/
+│   ├── view/              page and partial routes (HTML)
+│   └── api/               JSON routes
+├── templates/
+│   ├── base/              base.html (shell), auth_base.html (login, register)
+│   ├── pages/             thin pages that include a partial
+│   └── partials/          the fragments an HTMX request gets
+├── static/
+│   ├── css/               app.css (built) and src/ (input, tokens, fonts)
+│   ├── js/                the app's own scripts
+│   ├── vendor/            htmx, Alpine.js, Flowbite, Inter
+│   └── img/
+└── tests/                 pytest
+tools/css.sh               rebuilds app.css
+theme/flowbite/            submodule, Flowbite 4.0.2, reference only
+main.py                    entry point
+```
+
+## How pages work
+
+- Every screen has a page in `templates/pages/` and a fragment in `templates/partials/`. The page
+  extends the shell and only includes the fragment. `render_view` in
+  `app/routes/view/fragments.py` answers an HTMX request with the fragment and any other request
+  with the page.
+- Markup is Flowbite v4 components only. `theme/flowbite/content/components/<name>.md` holds the
+  markup for each component.
+- Templates carry no inline script, no `style` attribute and no `on*=` handler. Behaviour lives in
+  named Alpine components in `app/static/js/components.js`, because the Alpine CSP build evaluates
+  no free-form JavaScript.
+- A write route checks the CSRF pair first: the token travels in the `X-CSRF-Token` header, set by
+  `hx-headers` on the form.
+- `app/tests/test_templates.py` fails a template that breaks one of these rules or uses a class
+  that is missing from the built `app.css`.
+
+## Security
+
+- `AUTH_SECRET` has no default and is never logged. The login cookie is `HttpOnly`; its `Secure`
+  and `SameSite` flags follow `COOKIE_SECURE` and `COOKIE_SAMESITE`.
+- Every POST of the auth routes (login, register, forgot and reset password, verify, the users API)
+  needs the CSRF pair and answers 403 without it. Logout is exempt.
+- Every response carries a content security policy that allows the own origin only (no inline
+  script or style, no `eval`, no CDN), plus `X-Content-Type-Options`, `Referrer-Policy`,
+  `X-Frame-Options`, `Permissions-Policy` and `Cross-Origin-Opener-Policy`. They are listed in
+  `app/core/security_headers.py`. `Strict-Transport-Security` is sent only when
+  `COOKIE_SECURE=true`.
+- htmx runs with `allowEval`, `allowScriptTags` and `includeIndicatorStyles` off and
+  `selfRequestsOnly` on (the `htmx-config` meta tag in `base/base.html`).
+- The API docs pages (`/docs`, `/redoc`, `/openapi.json`) are off: Swagger UI needs a CDN and an
+  inline script, which the policy forbids.
+- Uploads are validated before they are stored, limited to 10 MB, and only the owner can download
+  or delete a file.
 
 ## CSS
 
-The stylesheet `app/static/css/app.css` is built from `app/static/css/src/input.css` (Tailwind v4 with
-the Flowbite plugin) and the design tokens in `app/static/css/src/tokens.css`. The built file is
-committed, so running the app needs no build step, and Node is not needed to rebuild it:
+The stylesheet `app/static/css/app.css` is built from `app/static/css/src/input.css` (Tailwind v4
+with the Flowbite plugin) and the design tokens in `app/static/css/src/tokens.css`, an unchanged
+copy of Flowbite's default theme. The built file is committed, so running the app needs no build
+step, and Node is not needed to rebuild it:
 
 ```bash
 tools/css.sh            # rebuild app/static/css/app.css
@@ -197,104 +211,49 @@ tools/css.sh --watch    # rebuild on every change
 
 The first run downloads the Tailwind standalone CLI into `build/` (not committed) and checks its
 sha256 against the value pinned in the script. Rebuild and commit `app.css` after you change a
-template, a script in `app/static/js/` or `tokens.css`. See `VENDORED.md` for the pinned tools.
+template, a script in `app/static/js/` or `tokens.css`.
 
-The Inter font is vendored in `app/static/vendor/inter/` and declared in `app/static/css/src/fonts.css`, so pages load it from this server and never from a CDN.
+The Inter font is vendored in `app/static/vendor/inter/` and declared in
+`app/static/css/src/fonts.css`, so pages load it from this server and never from a CDN.
 
-## Updating Model References in `init_models`
+## Adding a model
 
-When you define a new **Database model** in your application, it's essential to update the `init_models` function to ensure that Alembic can detect and generate migrations for this new model correctly. This step is crucial for maintaining the integrity of your database schema and ensuring that all models are correctly versioned.
+A model change ships with its migration and its import in `init_models`.
 
-### Steps to Update `init_models`
-
-1. **Locate `init_models` Function**: Open the `base.py` file in `app/database/base.py`. This file contains the `init_models` function, which is responsible for importing all the models in your application.
-
-2. **Add New Model Import**: Once you have defined a new model in your application, you need to import it in the `init_models` function. Ensure that you follow the existing import structure. For example, if your new model is `Invoice` and it's located in the `models.financial` module, you would add the following line:
+1. Define the model in `app/models/`.
+2. Import it in `init_models` in `app/database/base.py`, so Alembic sees it:
 
    ```python
    from ..models.financial import Invoice  # noqa: F401
    ```
 
-   The `# noqa: F401` comment at the end of the import statement tells the linter to ignore the "imported but unused" warning, as the import is necessary for Alembic to detect and generate migrations for the model.
-
-3. **Follow Import Conventions**: If you have multiple models in the same module, you can import them in a single line to keep the `init_models` function organized. For example:
-
-   ```python
-   from ..models.financial import Invoice, Payment, Transaction  # noqa: F401
-   ```
-
-4. **Save Changes**: After adding the import statement for your new model, save the changes to the `base.py` file.
-
-5. **Generate Alembic Migration**: With the new model imported in the `init_models` function, you can now generate an Alembic migration script that includes this model. Run the Alembic command to autogenerate a migration (see `app/migrations/README`):
+3. Generate the migration (see `app/migrations/README` for the naming):
 
    ```bash
-   .venv/bin/alembic revision --autogenerate --rev-id 0002_invoice -m "Added new model Invoice"
+   .venv/bin/alembic revision --autogenerate --rev-id 0002_invoice -m "invoice"
    ```
 
-6. **Review and Apply Migration**: Always review the generated migration script to ensure it accurately represents the changes to your models. After reviewing, apply the migration to update your database schema:
+4. Review the generated script, then apply it:
 
    ```bash
    .venv/bin/alembic upgrade head
    ```
 
-## Project Structure
-
-Below is an overview of the project structure for application. This structure is designed to organize the application's components logically, making it easier to navigate and maintain.
-
-```bash
-FastAPI-HTMX/
-├── app/
-│ ├── core/             # Core application logic and utilities
-│ │ ├── config.py         # Application configuration
-│ │ └── security.py       # Security utilities
-│ ├── database/         # Database configurations and connections
-│ │ ├── base.py           # Base database setup
-│ │ └── session.py        # Database session management
-│ ├── migrations/         # Alembic migration scripts
-│ ├── models/           # SQLAlchemy ORM models
-│ │ ├── groups.py         # Group model definitions
-│ │ ├── roles.py          # Role model definitions
-│ │ └── users.py          # User model definitions
-│ ├── routes/           # API route definitions
-│ │ ├── api/
-│ │ │ ├── auth.py         # Authentication endpoints
-│ │ │ └── users.py        # User management endpoints
-│ │ └── view/           # View routes for web interface
-│ │   ├── group.py        # Group management views
-│ │   ├── role.py         # Role management views
-│ │   └── view_crud.py    # SQLAlchemyCRUD class
-│ ├── schema/           # Pydantic schemas
-│ │ ├── group.py          # Group schemas
-│ │ ├── role.py           # Role schemas
-│ │ └── user.py           # User schemas
-│ ├── static/           # Static files
-│ │ ├── css/              # Stylesheets
-│ │ ├── js/               # JavaScript files
-│ │ └── img/              # Images and assets
-│ └── templates/        # Jinja2 HTML templates
-│   ├── auth/             # Authentication templates
-│   ├── components/       # Reusable components
-│   └── partials/         # Partial templates
-├── tests/              # Unit and integration tests
-├── .env                # Environment variables (copy of .env.example, not committed)
-├── .env.example        # Template for .env
-├── alembic.ini         # Alembic configuration
-├── main.py             # Application entry point
-├── pyproject.toml      # Project configuration and pinned dependencies
-├── uv.lock             # Locked dependencies (uv)
-└── README.md           # Project documentation
-```
-
-## ER Diagram
-
-Here's the Entity-Relationship (ER) diagram for database:
+## ER diagram
 
 ![ER Diagram](app/static/img/logo/er_diagram.png)
 
+## Known gaps
+
+The starter runs on SQLite only so far, and upload has not been run against a real MinIO server
+(the tests use a fake storage object). Password reset has no page yet. The full list is in
+[`TODO.md`](TODO.md).
+
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request for any changes.
+Open an issue or a pull request on [maanas/FastAPI-HTMX](https://github.com/maanas/FastAPI-HTMX).
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+The upstream project states the MIT License in its README. The repository holds no `LICENSE` file
+yet; adding one is listed in `TODO.md`.
