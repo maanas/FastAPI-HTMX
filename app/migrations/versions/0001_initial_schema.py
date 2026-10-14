@@ -24,10 +24,11 @@ def upgrade() -> None:
     op.create_table('group',
     sa.Column('group_name', sa.String(length=200), nullable=False),
     sa.Column('group_desc', sa.String(length=1024), nullable=True),
-    sa.Column('permission', sa.String(), nullable=True),
+    sa.Column('permission', sa.String(length=16), nullable=True),
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.CheckConstraint("permission IN ('read', 'write', 'delete', 'admin')", name=op.f('ck_group_permission')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_group')),
     sa.UniqueConstraint('group_name', name=op.f('uq_group_group_name'))
     )

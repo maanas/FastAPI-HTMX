@@ -307,13 +307,16 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - [x] **`Permission` type** (2026-10-14, branch `fix/permission-type`): `Permission` in
   `app/models/groups.py` is a `str, enum.Enum` (read, write, delete, admin), stored as
   `VARCHAR(16)` with CHECK `ck_group_permission` (no native enum, the same on SQLite and
-  Postgres; owner's choice). Migration `0002_permission_enum` sets any other value to NULL, then
-  changes the type and adds the check; checked up, down and up on SQLite, `alembic check` clean.
+  Postgres; owner's choice). The column and check are in `0001_initial_schema` itself: the
+  owner chose to edit it rather than add a `0002`, since the starter was installed nowhere
+  (the README rule against editing a shared migration applies from now on). Checked up, down
+  and up on SQLite, `alembic check` clean.
   `app/tests/test_permission.py` proves the check refuses a value after the migrations.
   Left open by it:
   - Nothing reads or writes `group.permission` (no form, schema or route).
-  - The migration was not run on Postgres (read only); `alembic upgrade --sql` fails on SQLite
-    because batch mode needs a connection.
+  - The migration was not run on Postgres (read only).
+  - A database made from the old `0001` keeps the unchecked `VARCHAR`: delete it and run
+    `alembic upgrade head` again.
 - [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
   `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
   and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
