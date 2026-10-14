@@ -126,6 +126,18 @@ required.
 
 With placeholder MinIO values the app starts and every page works, but an upload answers "File
 storage is not available". For file storage, run a MinIO server and set the four `MINIO_*` values.
+The app creates the bucket on the first upload if it is missing.
+
+A local server (`minio/minio` is no longer on Docker Hub and `quay.io/minio/minio` refuses
+anonymous pulls; this image worked on 2026-10-14):
+
+```bash
+docker run -d --name minio -p 127.0.0.1:9000:9000 -e MINIO_ROOT_USER=<access key> \
+  -e MINIO_ROOT_PASSWORD=<secret key> cgr.dev/chainguard/minio:latest server /tmp/data
+```
+
+Set `MINIO_URL=http://127.0.0.1:9000` and the two keys to the values you chose. The data is lost
+with the container.
 
 ### Windows
 
@@ -245,9 +257,9 @@ A model change ships with its migration and its import in `init_models`.
 
 ## Known gaps
 
-The starter runs on SQLite only so far, and upload has not been run against a real MinIO server
-(the tests use a fake storage object). Password reset has no page yet. The full list is in
-[`TODO.md`](TODO.md).
+The starter runs on SQLite only so far. Upload, download and delete were run against a real MinIO
+server on 2026-10-14 (RELEASE.2026-09-22); the tests use a fake storage object. Password reset has
+no page yet. The full list is in [`TODO.md`](TODO.md).
 
 ## Contributing
 

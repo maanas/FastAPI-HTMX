@@ -224,7 +224,8 @@ async def post_upload_file(
                 user_id=user_id,
             )
 
-            file_url = await storage("upload", minio.upload_file, file, unique_name)
+            await storage("upload", minio.ensure_bucket)
+            await storage("upload", minio.upload_file, file, unique_name)
             stored = unique_name
 
             await upload_crud.create(dict(file_create), db)
@@ -236,10 +237,7 @@ async def post_upload_file(
                     {
                         "showAlert": {
                             "type": "added",
-                            "message": (
-                                f"{file_create.name} uploaded successfully. "
-                                f"URL: {file_url}"
-                            ),
+                            "message": f"{file_create.name} uploaded successfully.",
                             "source": "upload-page",
                         },
                         "refreshUploadTable": "",

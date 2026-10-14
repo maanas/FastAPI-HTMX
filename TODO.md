@@ -28,8 +28,8 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   (Flowbite 4.0.2, Alpine 3.17.4, htmx 2.0.11, Tailwind CLI 4.3.3, Inter 5.3.0, all direct Python
   dependencies), except sqlalchemy (held at 2.0.54 by fastapi-users-db-sqlalchemy).
 - The app was clicked through in Chrome on 2026-10-13 (see "Browser pass"): the console stayed
-  clean on every page. No upload, download or delete has run against a real MinIO server yet
-  (tests use a fake storage object; Docker was not running on the Mac Pro that day).
+  clean on every page. Upload, download and delete ran against a real MinIO server on 2026-10-14
+  (see "MinIO pass").
 - Workers get their settings as environment variables, never a `.env` file: the ten names are in
   `.env.example`. This Mac has no `.env` for the repo. Workers must never run a bare `export`,
   `env`, `set` or `printenv`: one did on 2026-10-13 and printed the shell environment, with an API
@@ -55,7 +55,12 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   `htmx-patterns`: the error answers, CSRF helper and exception handler as shipped, and the
   expected htmx console line in a browser pass; `new-page`: title block, `path_for`,
   `submitted_form`).
-- Next: the MinIO part of "Browser pass", then "Housekeeping".
+- One retro proposal was applied with the "MinIO pass" task on 2026-10-14 (checker: run
+  `alembic upgrade head` on the scratch database before creating the superuser).
+- A local MinIO server for a test: `minio/minio` is gone from Docker Hub and `quay.io/minio/minio`
+  refuses anonymous pulls (both checked 2026-10-14); `cgr.dev/chainguard/minio:latest` works, the
+  command is in the README. The image is still on the Mac Pro, the container is removed.
+- Next: "Housekeeping".
 
 ## Change list
 
@@ -225,7 +230,7 @@ in variables in one place (colours are decided later, keep Flowbite's default th
     longer injects them). An Alpine `:style` string binding would be blocked by the policy and no
     guard catches it. The eval guard does not see `data-hx-*` attributes or a `js:` value that
     comes from a Jinja expression.
-- [ ] **Browser pass** (2026-10-13, branch `fix/browser-pass`; open only for MinIO). Done in
+- [x] **Browser pass** (2026-10-13, branch `fix/browser-pass`). Done in
   Chrome through the Claude extension against a started app with `COOKIE_SECURE=false` on
   127.0.0.1 and a scratch database. No CSP violation, "CSP Parser Error" or "Undefined variable"
   on any page. Working: login (email check, wrong password, Enter and Submit), register and its
@@ -243,8 +248,7 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   placeholder failed the field's own pattern; the profile alert printed a Python tuple; the
   password help text did not name the required special characters.
   Still open:
-  - Upload, table refresh, download and delete against a real MinIO server (start Docker, run a
-    MinIO container on port 9000, set the four `MINIO_*` settings).
+  - Upload against a real MinIO server: done in "MinIO pass".
   - `confirm()` dialogs were answered by a stub in the page (the extension cannot see a native
     dialog); htmx called it with the right text each time.
   - Small: every profile field is required to save a role for a user; the upload message
@@ -252,6 +256,26 @@ in variables in one place (colours are decided later, keep Flowbite's default th
     confirm while the group and user ones do; the sidebar marks no current page; the "Beta"
     notice returns on every full page load.
   - The findings that belonged to the error handling are fixed in "htmx leftovers".
+- [x] **MinIO pass** (2026-10-14, branch `fix/minio-pass`). Done in Chrome against MinIO
+  RELEASE.2026-09-22 in a container (Chainguard image), a scratch database and throwaway keys.
+  Working: upload, the table refresh, download (the bytes match; attachment, `nosniff`, a name
+  with accents, spaces and brackets), delete (row and object both gone), and with the server
+  stopped a download and a delete each answer "File storage is not available" after about 6
+  seconds and keep the row (an upload with no server was checked on 2026-10-13).
+  Fixed in this task: nothing created the bucket, so a new server refused every upload
+  (`ensure_bucket` in `app/core/minio_core.py`, called by the upload route before the first
+  store, remembered per process after a success); the success alert printed the storage address
+  (host, bucket, object name); file delete had no confirm.
+  Left open by it:
+  - A failed download answers at the `/download/...` URL with the upload heading and the message
+    only, no form and no table: the user has to go back.
+  - The MinIO client's calls are synchronous inside `async def`: they block the event loop, for
+    about 6 seconds per request when the server is down (`asyncio.to_thread`).
+  - No test pins that a file refused by validation never reaches the bucket check (one
+    `bucket_checks == 0` assert in an existing test).
+  - With several worker processes, two first uploads at once can both try to create the bucket;
+    the loser answers 503 once.
+  - `MinioClient.create_bucket` is unused now. The date column shows `14-10-2026` with no time.
 - [ ] **Housekeeping**: static and template paths relative to the package (today relative to the
   working directory), a LICENSE file (the README says MIT, the repo has none: ask upstream or
   state it for our changes), the 49 existing ruff findings, sqlalchemy 2.1 once

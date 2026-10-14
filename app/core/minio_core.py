@@ -20,6 +20,20 @@ class MinioClient:
             secure=settings.minio_secure,
         )
         self.bucket_name = settings.minio_bucket
+        # Set after the first successful check; a failure is not remembered
+        self.bucket_ready = False
+
+    async def ensure_bucket(self) -> None:
+        """Create the bucket if it is missing; raises on a storage error.
+
+        Called on the first upload, not at startup: with placeholder settings the
+        client retries for seconds and the app must still start at once.
+        """
+        if self.bucket_ready:
+            return
+        if not self.minio_client.bucket_exists(self.bucket_name):
+            self.minio_client.make_bucket(self.bucket_name)
+        self.bucket_ready = True
 
     async def create_bucket(self) -> str:
         try:
