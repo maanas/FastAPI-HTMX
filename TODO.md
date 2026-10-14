@@ -16,10 +16,11 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- Pull requests #1 to #9 are merged (2026-10-13). `main` holds the uv setup with pinned
+- Pull requests #1 to #10 are merged (#10 on 2026-10-14). `main` holds the uv setup with pinned
   dependencies, the vendored assets, the CSS build, the whole template task (every template is
-  Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed, the Alpine CSP build
-  and the security task. The suite has 415 tests there, 427 with `fix/browser-pass`.
+  Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed, the Alpine CSP build,
+  the security task and the browser pass. The suite has 427 tests there, 584 with
+  `feat/htmx-leftovers`.
 - Git identity for this repo is `Maanas Royy <m4manas@gmail.com>` (local config, there is no
   global email). The fork's commits were recreated with it on 2026-10-13, so `main` was force
   pushed once by maanas.
@@ -44,7 +45,11 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Two more were applied with the Browser pass task on 2026-10-14 (checker: wait for `/login`,
   save the CSRF cookie from `GET /login`, placeholder settings instead of SKIPPED;
   `htmx-patterns`: the browser pass method in `reference/browser-pass.md`).
-- Next: "htmx leftovers" (the browser pass added to it), then the MinIO part of "Browser pass".
+- The "htmx leftovers" task (2026-10-14, branch `feat/htmx-leftovers`) also rewrote the README
+  and replaced the logo (`app/static/img/logo/logo.svg`). The demo GIF section is gone from the
+  README; the file `app/static/img/logo/FastAPI-HTMX.gif` (1.1 MB, old interface) is still in the
+  repo: delete it or record a new one. The ER diagram was not checked against the models.
+- Next: the MinIO part of "Browser pass", then "Housekeeping".
 
 ## Change list
 
@@ -72,31 +77,46 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   gone: the Flowbite 1.8.1 stylesheet ("CSS build") and hyperscript 0.9.11 ("Hyperscript out").
   htmx 2 sends DELETE parameters in the URL: the group and file delete routes
   now read the query string.
-- [ ] **htmx leftovers** found in the htmx 2 audit (2026-10-13). Closed by the template task: the
-  missing CSRF check on `delete_file`, the string-built `hx-vals`, the `response-targets`
-  attributes, `hx-on::after-request` and the `onclick` delete. Still open:
-  - `hx-get` and `hx-post` use absolute URLs from `url_for`. htmx 2 refuses a request whose
-    origin differs from the page (`selfRequestsOnly`), so behind a proxy that changes scheme or
-    host nothing is sent: run uvicorn with proxy headers or render relative URLs.
-  - `handle_error` (`app/routes/view/errors.py`) answers 200 with an error body for every
-    failure, including a missing CSRF header and "Not authorized": a rejected request should be a
-    4xx (then htmx needs to be told to swap those responses). It also shows the raw exception
-    text to the user, for example "An unexpected error occurred: The CSRF signatures submitted do
-    not match." or SQL from a database error.
-  - An add or edit form opened directly by URL (not from its list) renders with an empty CSRF
-    token, because the route copies the token from the request header: saving is refused. The
-    routes should issue a token themselves.
-  - The CSRF cookie is replaced by every page that issues a token, so a second tab makes the
-    first tab's next write fail until it is reloaded.
-  Seen in the browser pass (2026-10-13), same root as the `handle_error` point:
-  - An error answer to a form post replaces the form with an empty one (the typed values are
-    lost) and `hx-push-url` puts the POST-only URL in the address bar (`/post_create_roles`), so
-    a reload answers 405.
-  - A refused delete ("You cannot delete your own account") replaces the whole list with the
-    message; the table is gone until the page is opened again.
-  - The tab title never changes on an htmx navigation (it stays "Dashboard | FastAPI HTMX" on
-    every page): the fragments carry no `<title>`.
-  - An unknown URL answers the JSON `{"detail":"Not Found"}`, not a page.
+- [x] **htmx leftovers** (2026-10-14, branch `feat/htmx-leftovers`), found in the htmx 2 audit and
+  the browser pass. Checked in Chrome at the end (scratch database): no CSP violation, "CSP Parser
+  Error" or "Undefined variable".
+  - Templates render paths, not absolute URLs: the Jinja global `path_for` (`app/templates.py`)
+    replaces `url_for`, which `template_rules.py` now refuses, so htmx's `selfRequestsOnly` holds
+    behind a proxy that changes scheme or host.
+  - `csrf_token_for` (`app/routes/view/csrf.py`) issues every CSRF token and reuses the token of
+    a valid cookie with more than half its lifetime left: a form opened by URL saves, and a
+    second tab no longer breaks the first. Write routes no longer replace the cookie. A
+    successful login sets a new pair (`rotate_csrf_cookie` in `on_after_login`).
+  - `handle_error` answers with a status (422 invalid form, the app's own 403, 404, 409, 403 with
+    a fixed message for a failed CSRF check, 500 with a fixed message for anything else) and the
+    header `X-Error-Rendered`; a listener in `shell.js` lets htmx swap only those answers. The
+    log gets type and stack frames, never variable values, SQL or parameters. A refused delete
+    keeps the list and shows an alert (`alert_error`). Write forms push no URL.
+  - A failed form comes back with the typed values (`submitted_form`), also after a failed CSRF
+    check. The user edit error path no longer reads the stored profile for a normal user.
+  - A fragment answer starts with the page's `<title>` (`base/fragment.html`), so the tab title
+    follows htmx navigation. An unknown URL gets `pages/not_found.html` (as a fragment only for
+    `HX-Target: dashboard-body`), JSON for API callers. `http_exception_handler` keeps status
+    and detail; a 401 redirects a browser and sends `HX-Redirect` to htmx.
+  Left open by it:
+  - `path_for` drops a `root_path` prefix: matters only if the app is served under a path.
+  - `csrf.py` reads three private attributes of fastapi-csrf-protect 1.0.7 (no public getters);
+    the helper tests fail if an upgrade renames them. The CSRF cookie is not removed on log out
+    (fastapi-users has no hook with the response); the next login replaces it.
+  - An error the app did not render (a crash outside `handle_error`, a network failure) still
+    shows the user nothing: a generic toast on `htmx:responseError` and `htmx:sendError`.
+  - loguru runs with its default sink (`diagnose=True`): any other logged traceback prints local
+    variable values. Configure it once without them. The message of a non-database exception is
+    still logged by `handle_error`.
+  - `partials/user/add_user.html` and `/get_create_users` are still the broken role form: no CSRF
+    token in its markup, `hx-push-url` on a write form (skipped by the guard with a comment).
+  - `/dashboard` answers the whole document to an HTMX request (it is a plain link today). The
+    not-found page has no navigation, also for a logged-in user.
+  - htmx logs "Response Status Error Code 4xx" to the console for every swapped error answer;
+    that is expected and not a failure in a browser pass. A successful delete alert uses the
+    same danger colours as an error alert.
+  - The scripts (`shell.js`, `components.js`) are covered by string guards and the browser pass
+    only: there is no JS test runner.
 - [x] **CSS build** (2026-10-13, branch `feat/css-build`): `tools/css.sh` downloads the Tailwind
   4.3.3 standalone CLI into the ignored `build/tailwind/`, checks its pinned sha256 and builds
   `app/static/css/app.css` (committed, 47 KB) from `app/static/css/src/input.css`. The one tokens
@@ -189,8 +209,8 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - The `/users` API router is used by no template or script. Decide whether it stays mounted.
   - The login and register forms showed nothing on a 403 (an expired CSRF cookie): fixed in the
     browser pass, they now show a message for every answer.
-  - `http_exception_handler` (`app/exception.py`) turns every non-401 `HTTPException` into a bare
-    400, including the library's 403 and 404.
+  - `http_exception_handler` turned every non-401 `HTTPException` into a bare 400: fixed in
+    "htmx leftovers".
   - An unhandled exception answers 500 without the security headers (Starlette answers it outside
     user middleware).
   - `COOKIE_SAMESITE=none` with `COOKIE_SECURE=false` is refused by fastapi-csrf-protect on the
@@ -225,7 +245,7 @@ in variables in one place (colours are decided later, keep Flowbite's default th
     "'hello' is ready for upload" drops the file extension; the role edit Cancel has no
     confirm while the group and user ones do; the sidebar marks no current page; the "Beta"
     notice returns on every full page load.
-  - The findings that belong to the error handling are listed under "htmx leftovers".
+  - The findings that belonged to the error handling are fixed in "htmx leftovers".
 - [ ] **Housekeeping**: static and template paths relative to the package (today relative to the
   working directory), a LICENSE file (the README says MIT, the repo has none: ask upstream or
   state it for our changes), the 49 existing ruff findings, sqlalchemy 2.1 once
