@@ -67,21 +67,26 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   command is in the README. The image is still on the Mac Pro, the container is removed.
 - Pull requests #11 to #14 are merged (2026-10-14). "`Permission` type" is on
   `fix/permission-type`.
-- Next (branch `feat/postgres-procrastinate`, task "Postgres and procrastinate", 2026-10-16):
-  step 1 Postgres only (asyncpg, `compose.yaml` with postgres:17 on 127.0.0.1:5434, aiosqlite
-  and the SQLite paths removed, tests on a throwaway database created on that server); step 2
-  procrastinate (psycopg[binary], `app/jobs/`, migration 0002 with the procrastinate schema,
-  `include_object` in env.py, app opened in the lifespan, one example task, worker command,
-  tests with InMemoryConnector); step 3 README, CLAUDE.md commands. Reference: personam
-  `4f47c36`. Ledger: step 1 `8e24e00` (coder 52k, reviewer 33k
-  approve with 5 minor findings, 1 fix round, checker 26k pass 609 tests, committer). Note: the
-  local `.venv` scripts have shebangs from `~/Sites/minelytics/FastAPI-HTMX` (copied venv);
-  workers use `.venv/bin/python -m <tool>`. Agents and skills still mention SQLite: retro
-  proposal. Step 2 `49377bf` (coder 50k, reviewer 37k approve, 0 fix rounds, checker
-  28k pass 612 tests plus a worker smoke job, committer 20k). Step 3 (docs) was folded into steps
-  1 and 2. Retro done: 4 proposals applied (checker Postgres scratch db and real login recipe, coder and reviewer Postgres db rules); ruff line-length set to 100 to match CLAUDE.md. Next: the pull request, then `/clear`. Recreate the local `.venv` (`rm -rf .venv && uv sync`). Closed after this task: `psycopg_conninfo()` maps `?ssl=` to `sslmode`; 0002 renders under `--sql`; a test fails when the installed procrastinate differs from the version 0002 was written for. Still open: other asyncpg-only query parameters (such as
-  `prepared_statement_cache_size`) reach libpq unmapped; `app/migrations/env.py` passes
-  `DATABASE_URL` through ConfigParser, so a `%` in the password breaks alembic (escape it as `%%`).
+- Postgres and procrastinate (2026-10-16, branch `feat/postgres-procrastinate`, pull request
+  #18, open for maanas to merge): the starter runs on Postgres only (asyncpg, `compose.yaml` with
+  postgres:17 on 127.0.0.1:5434, tests on a throwaway database on that server) with the
+  procrastinate job queue (`app/jobs/`, migration 0002, worker command). Follow-ups on the same
+  branch: `psycopg_conninfo()` maps `?ssl=` to `sslmode`, 0002 renders under `--sql`, a test
+  fails when the installed procrastinate differs from the version 0002 was written for.
+  Five retro proposals applied (checker, coder and reviewer Postgres rules; checker secret values
+  with no "placeholder"). Left open by it:
+  - Other asyncpg-only query parameters (such as `prepared_statement_cache_size`) reach libpq
+    unmapped.
+  - `app/migrations/env.py` passes `DATABASE_URL` through ConfigParser, so a `%` in the password
+    breaks alembic (escape it as `%%`).
+  - The local `.venv` scripts have shebangs from `~/Sites/minelytics/FastAPI-HTMX` (copied
+    venv): recreate it (`rm -rf .venv && uv sync`). Until then use `.venv/bin/python -m <tool>`.
+  - The ECC skills `python-testing` and `fastapi-patterns` still show SQLite examples.
+  - SQLite is gone: the SQLite notes in the items below are history. Existing `users.db` files
+    are not migrated.
+- Next: after #18 is merged, pick a task from the open items below (MinIO calls off the event
+  loop, loguru without `diagnose`, the broken add-user role form, a generic error toast) or
+  "Decide what medusa takes".
 
 ## Change list
 
@@ -313,8 +318,8 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - `setup.ps1` was never run (no PowerShell on the Mac Pro): run it once on Windows.
   - sqlalchemy 2.1: still blocked, fastapi-users-db-sqlalchemy 7.0.0 needs `<2.1.0` (checked
     2026-10-14).
-  - A relative SQLite path in `DATABASE_URL` (the `.env.example` default) still follows the
-    directory the app starts from.
+  - A relative SQLite path in `DATABASE_URL` followed the start directory: gone with SQLite
+    (2026-10-16).
   - `user.py` builds `role_id` as a one-element tuple (`(nh3.clean(...),)`, about line 255).
   - The conftest error path for a failed `alembic upgrade head` was never triggered in a run.
   - Ask upstream to add the MIT LICENSE their README claims (an issue for maanas to open).
