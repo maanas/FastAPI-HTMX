@@ -16,12 +16,10 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- Next (branch `chore/maanas-context-guard`, staged, not committed): `ecc.sh . web` run; team
-  agents and skills moved to `.maanas/` and linked; context guard live (85k warn, 100k
-  compact); this file split into State, Pending, Done; `~/bin/ecc.sh` rules relaxed (uv run and
-  ty yield to the project section). Next: rerun `ecc.sh . web` to refresh the CLAUDE.md block,
-  commit, open the pull request, then `/clear`. `git stash pop` on `docs/medusa-takes` restores
-  the procrastinate notes for Background jobs.
+- Dev team move (branch `chore/maanas-context-guard`, pull request #17): team agents and skills
+  moved to `.maanas/` and linked; context guard live (85k warn, 100k compact); this file split
+  into State, Pending, Done; `~/bin/ecc.sh` rules relaxed (uv run and ty yield to the project
+  section). Merge it before #18, which then moves its agent edits to `.maanas/agents/`.
 - Pull requests #1 to #10 are merged (#10 on 2026-10-14). `main` holds the uv setup with pinned
   dependencies, the vendored assets, the CSS build, the whole template task (every template is
   Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed, the Alpine CSP build,
@@ -71,15 +69,12 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - A local MinIO server for a test: `minio/minio` is gone from Docker Hub and `quay.io/minio/minio`
   refuses anonymous pulls (both checked 2026-10-14); `cgr.dev/chainguard/minio:latest` works, the
   command is in the README. The image is still on the Mac Pro, the container is removed.
-- Pull requests #11 to #14 are merged (2026-10-14). "`Permission` type" is on
-  `fix/permission-type`.
-- Next: decide what medusa takes.
+- Pull requests #11 to #15 are merged (2026-10-14).
+- Next: medusa step 2 in the spider repo, built from the whole starter (see "Decide what medusa
+  takes").
 
 ## Pending
 
-- [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
-  `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
-  and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
 - [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
   after the starter runs on Postgres (SQLite only today); candidates to compare then are a
   `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.
@@ -332,3 +327,19 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - The migration was not run on Postgres (read only).
   - A database made from the old `0001` keeps the unchecked `VARCHAR`: delete it and run
     `alembic upgrade head` again.
+- [x] **Decide what medusa takes** (2026-10-14, owner's decision): the whole starter, not only
+  its front end. Recommended was the front-end half (folder pattern, shell, `render_view`,
+  vendored assets, CSS build, security headers, template guards, skills) with SQLAlchemy,
+  fastapi-users, CSRF and MinIO left until medusa's first write (its step 3); the owner chose
+  everything, with what medusa does not use removed in its own session. For that session:
+  - medusa today is read only (GET, no login, Tailscale address only) and reads
+    `metrics.sqlite` with stdlib `sqlite3` through `medusa/app/dash.py`, which stays its data
+    layer for the report pages; `metrics.sqlite` is the collectors' file and stays read-only
+    for the app. The starter's database is the app's own second file (inbox, decisions).
+  - worker01 runs `/usr/bin/python3.12` with the venv on `PYTHONPATH` (SELinux): the starter's
+    dependencies go into `medusa/app/requirements.txt` and get checked there.
+  - The login plan is Tailscale identity headers; fastapi-users comes along, so decide in that
+    session whether it backs the headers or goes.
+  - medusa's `flowbite` skill reads the reference markup from this clone
+    (`~/Sites/minelytics/FastAPI-HTMX/theme/flowbite`), no submodule in spider. It is there on
+    the Mac Pro only, not on the Mac mini.
