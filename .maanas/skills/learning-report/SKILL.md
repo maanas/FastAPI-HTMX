@@ -4,7 +4,7 @@ description: Shows how the starter's dev team is learning - review rounds, findi
 ---
 # Learning report
 
-1. From the repo root: `uv run python .claude/skills/learning-report/report.py`
+1. From the repo root: `uv run python .maanas/skills/learning-report/report.py`
 2. Show the output to the user.
 3. For an applied rule whose metric did not drop after 3 or more steps, say so and name the proposal id. The next retro run proposes a revision.
 4. Under "proposals waiting for approval", read each file in `.claude/learning/proposals/` and show its evidence and diff, so the user can approve or reject it.

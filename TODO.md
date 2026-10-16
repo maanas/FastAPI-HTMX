@@ -16,6 +16,12 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
+- Next (branch `chore/maanas-context-guard`, staged, not committed): `ecc.sh . web` run; team
+  agents and skills moved to `.maanas/` and linked; context guard live (85k warn, 100k
+  compact); this file split into State, Pending, Done; `~/bin/ecc.sh` rules relaxed (uv run and
+  ty yield to the project section). Next: rerun `ecc.sh . web` to refresh the CLAUDE.md block,
+  commit, open the pull request, then `/clear`. `git stash pop` on `docs/medusa-takes` restores
+  the procrastinate notes for Background jobs.
 - Pull requests #1 to #10 are merged (#10 on 2026-10-14). `main` holds the uv setup with pinned
   dependencies, the vendored assets, the CSS build, the whole template task (every template is
   Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed, the Alpine CSP build,
@@ -69,7 +75,16 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   `fix/permission-type`.
 - Next: decide what medusa takes.
 
-## Change list
+## Pending
+
+- [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
+  `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
+  and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
+- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
+  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
+  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.
+
+## Done
 
 - [x] **Run it as it is** (2026-10-13). Found in the run:
   - `requirements.txt` has no `loguru` (a dev dependency in `pyproject.toml`, imported by
@@ -317,9 +332,3 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - The migration was not run on Postgres (read only).
   - A database made from the old `0001` keeps the unchecked `VARCHAR`: delete it and run
     `alembic upgrade head` again.
-- [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
-  `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
-  and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
-- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
-  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
-  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.
