@@ -67,7 +67,22 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   command is in the README. The image is still on the Mac Pro, the container is removed.
 - Pull requests #11 to #14 are merged (2026-10-14). "`Permission` type" is on
   `fix/permission-type`.
-- Next: decide what medusa takes.
+- Next (branch `feat/postgres-procrastinate`, task "Postgres and procrastinate", 2026-10-16):
+  step 1 Postgres only (asyncpg, `compose.yaml` with postgres:17 on 127.0.0.1:5434, aiosqlite
+  and the SQLite paths removed, tests on a throwaway database created on that server); step 2
+  procrastinate (psycopg[binary], `app/jobs/`, migration 0002 with the procrastinate schema,
+  `include_object` in env.py, app opened in the lifespan, one example task, worker command,
+  tests with InMemoryConnector); step 3 README, CLAUDE.md commands. Reference: personam
+  `4f47c36`. Ledger: step 1 `8e24e00` (coder 52k, reviewer 33k
+  approve with 5 minor findings, 1 fix round, checker 26k pass 609 tests, committer). Note: the
+  local `.venv` scripts have shebangs from `~/Sites/minelytics/FastAPI-HTMX` (copied venv);
+  workers use `.venv/bin/python -m <tool>`. Agents and skills still mention SQLite: retro
+  proposal. Step 2 `49377bf` (coder 50k, reviewer 37k approve, 0 fix rounds, checker
+  28k pass 612 tests plus a worker smoke job, committer 20k). Step 3 (docs) was folded into steps
+  1 and 2. Retro done: 4 proposals applied (checker Postgres scratch db and real login recipe, coder and reviewer Postgres db rules); ruff line-length set to 100 to match CLAUDE.md. Next: the pull request, then `/clear`. Recreate the local `.venv` (`rm -rf .venv && uv sync`). Open after this task: the jobs
+  conninfo uses `str.replace("+asyncpg", "")` (fine until an asyncpg-only query parameter
+  such as `?ssl=` appears; then use `make_url().set(drivername="postgresql")`); the offline
+  `alembic upgrade --sql` cannot run 0002.
 
 ## Change list
 
@@ -320,6 +335,4 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - [ ] **Decide what medusa takes**: the folder pattern (`routes/view`, `routes/api`,
   `templates/{base,pages,partials}`), the shell and the asset build; users, roles, groups, MinIO
   and CSRF only when medusa gets its first write action (its login may be Tailscale identity).
-- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
-  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
-  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.
+- [x] **Background jobs**: procrastinate on Postgres, done on `feat/postgres-procrastinate` (2026-10-16).
