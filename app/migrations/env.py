@@ -51,6 +51,11 @@ def render_item(type_, obj, autogen_context):
     return False
 
 
+def include_object(obj, name, type_, reflected, compare_to) -> bool:
+    # procrastinate's tables come from its own SQL (0002_procrastinate), not the models.
+    return not (name or "").startswith("procrastinate_")
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -71,6 +76,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
         render_item=render_item,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -83,6 +89,7 @@ def do_run_migrations(connection: Connection) -> None:
         target_metadata=target_metadata,
         compare_type=True,
         render_item=render_item,
+        include_object=include_object,
     )
 
     with context.begin_transaction():

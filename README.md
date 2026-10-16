@@ -33,6 +33,7 @@ into a stable base for our own sites. Open work and its order are in [`TODO.md`]
 | [Python](https://www.python.org/) | 3.12 | |
 | [FastAPI](https://fastapi.tiangolo.com/) | 0.143.0 | served by [Uvicorn](https://www.uvicorn.org/) 0.54.0 |
 | [SQLAlchemy](https://www.sqlalchemy.org/) | 2.0.54 | async, Postgres (asyncpg) |
+| [procrastinate](https://procrastinate.readthedocs.io/) | 3.10.0 | job queue on Postgres (psycopg 3.3.6) |
 | [Alembic](https://alembic.sqlalchemy.org/en/latest/) | 1.20.0 | migrations |
 | [FastAPI Users](https://fastapi-users.github.io/fastapi-users/) | 15.0.5 | users and the login cookie |
 | [fastapi-csrf-protect](https://github.com/aekasitt/fastapi-csrf-protect) | 1.0.7 | CSRF token and cookie |
@@ -167,6 +168,28 @@ In the steps above, replace `.venv/bin/` with `.venv\Scripts\` on Windows.
 
 `setup.ps1` has not been run on Windows yet.
 
+## Background jobs
+
+Jobs are queued in the same Postgres database (procrastinate). The web app opens the queue in its
+lifespan, so a route can defer a job; a separate worker process runs it and also runs periodic
+tasks:
+
+```sh
+.venv/bin/python -m procrastinate --app=app.jobs.app worker
+```
+
+Define a task in `app/jobs/__init__.py` and defer it from a route or anywhere else:
+
+```python
+@app.task(queue="default", name="log_message")
+async def log_message(message: str) -> None: ...
+
+await log_message.defer_async(message="hello")
+```
+
+The queue tables come from migration `0002_procrastinate`. A procrastinate upgrade needs a new
+revision built from `procrastinate/sql/migrations`; autogenerate skips `procrastinate_*` tables.
+
 ## Project structure
 
 ```
@@ -176,6 +199,7 @@ app/
 ├── templates.py           the Jinja2 environment
 ├── commands/              create_superuser
 ├── core/                  settings (auth, CSRF, MinIO), security headers
+├── jobs/                  procrastinate app and tasks
 ├── database/              engine, session, auth (fastapi-users), init_models
 ├── migrations/            Alembic
 ├── models/                SQLAlchemy models: users, groups, upload

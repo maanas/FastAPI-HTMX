@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from starlette.exceptions import HTTPException
 
+from app import jobs
 from app.database.db import User
 from app.database.security import (
     auth_backend,
@@ -35,9 +36,10 @@ APP_DIR = Path(__file__).resolve().parent
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    logger.info("Application started")
-    yield
-    logger.info("Application shutdown")
+    async with jobs.app.open_async():
+        logger.info("Application started")
+        yield
+        logger.info("Application shutdown")
 
 
 # The API docs pages load Swagger UI from a CDN with an inline script: both are

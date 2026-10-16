@@ -22,6 +22,8 @@ dependencies = [
     "prompt-toolkit==3.0.53",
     "pydantic==2.14.1",
     "loguru==0.7.3",
+    "procrastinate==3.10.0",
+    "psycopg[binary]==3.3.6",
 ]
 
 [dependency-groups]
