@@ -51,8 +51,9 @@ def render_item(type_, obj, autogen_context):
     return False
 
 
-def is_sqlite(url: str) -> bool:
-    return url.startswith("sqlite")
+def include_object(obj, name, type_, reflected, compare_to) -> bool:
+    # procrastinate's tables come from its own SQL (0002_procrastinate), not the models.
+    return not (name or "").startswith("procrastinate_")
 
 
 def run_migrations_offline() -> None:
@@ -74,8 +75,8 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
-        render_as_batch=is_sqlite(url),
         render_item=render_item,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -87,8 +88,8 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
-        render_as_batch=is_sqlite(config.get_main_option("sqlalchemy.url")),
         render_item=render_item,
+        include_object=include_object,
     )
 
     with context.begin_transaction():

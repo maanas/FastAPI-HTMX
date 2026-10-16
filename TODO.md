@@ -16,10 +16,9 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
-- Dev team move (branch `chore/maanas-context-guard`, pull request #17): team agents and skills
-  moved to `.maanas/` and linked; context guard live (85k warn, 100k compact); this file split
-  into State, Pending, Done; `~/bin/ecc.sh` rules relaxed (uv run and ty yield to the project
-  section). Merge it before #18, which then moves its agent edits to `.maanas/agents/`.
+- Dev team move (pull request #17, merged 2026-10-16): team agents and skills live in
+  `.maanas/` and are linked into `.claude/`; context guard live (85k warn, 100k compact); this
+  file is split into State, Pending, Done. #18's agent edits were moved to `.maanas/agents/`.
 - Pull requests #1 to #10 are merged (#10 on 2026-10-14). `main` holds the uv setup with pinned
   dependencies, the vendored assets, the CSS build, the whole template task (every template is
   Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed, the Alpine CSP build,
@@ -69,15 +68,31 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - A local MinIO server for a test: `minio/minio` is gone from Docker Hub and `quay.io/minio/minio`
   refuses anonymous pulls (both checked 2026-10-14); `cgr.dev/chainguard/minio:latest` works, the
   command is in the README. The image is still on the Mac Pro, the container is removed.
-- Pull requests #11 to #15 are merged (2026-10-14).
-- Next: medusa step 2 in the spider repo, built from the whole starter (see "Decide what medusa
-  takes").
+- Pull requests #11 to #17 are merged (#11 to #16 on 2026-10-14, #17 on 2026-10-16).
+- Postgres and procrastinate (2026-10-16, branch `feat/postgres-procrastinate`, pull request
+  #18, open for maanas to merge): the starter runs on Postgres only (asyncpg, `compose.yaml` with
+  postgres:17 on 127.0.0.1:5434, tests on a throwaway database on that server) with the
+  procrastinate job queue (`app/jobs/`, migration 0002, worker command). Follow-ups on the same
+  branch: `psycopg_conninfo()` maps `?ssl=` to `sslmode`, 0002 renders under `--sql`, a test
+  fails when the installed procrastinate differs from the version 0002 was written for.
+  Five retro proposals applied (checker, coder and reviewer Postgres rules; checker secret values
+  with no "placeholder"). Left open by it:
+  - Other asyncpg-only query parameters (such as `prepared_statement_cache_size`) reach libpq
+    unmapped.
+  - `app/migrations/env.py` passes `DATABASE_URL` through ConfigParser, so a `%` in the password
+    breaks alembic (escape it as `%%`).
+  - The local `.venv` scripts have shebangs from `~/Sites/minelytics/FastAPI-HTMX` (copied
+    venv): recreate it (`rm -rf .venv && uv sync`). Until then use `.venv/bin/python -m <tool>`.
+  - The ECC skills `python-testing` and `fastapi-patterns` still show SQLite examples.
+  - SQLite is gone: the SQLite notes in the items below are history. Existing `users.db` files
+    are not migrated.
+- Next: after #18 is merged, pick a task from the open items below (MinIO calls off the event
+  loop, loguru without `diagnose`, the broken add-user role form, a generic error toast) or
+  medusa step 2 in the spider repo, built from the whole starter (see "Decide what medusa takes").
 
 ## Pending
 
-- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
-  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
-  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.
+Nothing pending outside the open items under State and Done.
 
 ## Done
 
@@ -309,8 +324,8 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - `setup.ps1` was never run (no PowerShell on the Mac Pro): run it once on Windows.
   - sqlalchemy 2.1: still blocked, fastapi-users-db-sqlalchemy 7.0.0 needs `<2.1.0` (checked
     2026-10-14).
-  - A relative SQLite path in `DATABASE_URL` (the `.env.example` default) still follows the
-    directory the app starts from.
+  - A relative SQLite path in `DATABASE_URL` followed the start directory: gone with SQLite
+    (2026-10-16).
   - `user.py` builds `role_id` as a one-element tuple (`(nh3.clean(...),)`, about line 255).
   - The conftest error path for a failed `alembic upgrade head` was never triggered in a run.
   - Ask upstream to add the MIT LICENSE their README claims (an issue for maanas to open).
@@ -343,3 +358,4 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - medusa's `flowbite` skill reads the reference markup from this clone
     (`~/Sites/minelytics/FastAPI-HTMX/theme/flowbite`), no submodule in spider. It is there on
     the Mac Pro only, not on the Mac mini.
+- [x] **Background jobs**: procrastinate on Postgres, done on `feat/postgres-procrastinate` (2026-10-16).

@@ -32,7 +32,8 @@ into a stable base for our own sites. Open work and its order are in [`TODO.md`]
 | --- | --- | --- |
 | [Python](https://www.python.org/) | 3.12 | |
 | [FastAPI](https://fastapi.tiangolo.com/) | 0.143.0 | served by [Uvicorn](https://www.uvicorn.org/) 0.54.0 |
-| [SQLAlchemy](https://www.sqlalchemy.org/) | 2.0.54 | async, SQLite locally (aiosqlite) |
+| [SQLAlchemy](https://www.sqlalchemy.org/) | 2.0.54 | async, Postgres (asyncpg) |
+| [procrastinate](https://procrastinate.readthedocs.io/) | 3.10.0 | job queue on Postgres (psycopg 3.3.6) |
 | [Alembic](https://alembic.sqlalchemy.org/en/latest/) | 1.20.0 | migrations |
 | [FastAPI Users](https://fastapi-users.github.io/fastapi-users/) | 15.0.5 | users and the login cookie |
 | [fastapi-csrf-protect](https://github.com/aekasitt/fastapi-csrf-protect) | 1.0.7 | CSRF token and cookie |
@@ -71,9 +72,10 @@ You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
    cp .env.example .env
    ```
 
-4. **Create the database** from the committed migration:
+4. **Start Postgres and create the schema** from the committed migration:
 
    ```sh
+   docker compose up -d --wait db
    .venv/bin/alembic upgrade head
    ```
 
@@ -97,11 +99,11 @@ You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
    It serves on `http://127.0.0.1:8080`. Templates, static files, the Alembic location and the
    `.env` file are found from the package, so the app and the tests run from any directory. A
-   relative SQLite path in `DATABASE_URL` (the default) still points into the directory you start
-   from; use an absolute path to avoid that.
+   database comes from `DATABASE_URL`, a Postgres server (step 4).
 
-7. **Run the tests.** They build their own throwaway SQLite database from the migrations and never
-   touch the one `DATABASE_URL` points to. They still need the other settings from step 3 (`.env`
+7. **Run the tests.** They need the database container running. They create their own throwaway
+   Postgres database from the migrations on that server (`TEST_DATABASE_URL`, default the
+   compose server) and never touch the one `DATABASE_URL` points to. They still need the other settings from step 3 (`.env`
    or the environment).
 
    ```sh
@@ -116,7 +118,7 @@ required.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | yes | Database URL, SQLite by default (`sqlite+aiosqlite:///./users.db`) |
+| `DATABASE_URL` | yes | Postgres URL, `postgresql+asyncpg://` (the compose database by default) |
 | `AUTH_SECRET` | yes | Signs the login token. The app refuses to start if it is missing, a placeholder or shorter than 32 characters. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
 | `MINIO_URL` | yes | MinIO server URL |
 | `MINIO_ACCESS_KEY` | yes | MinIO access key |
@@ -166,6 +168,28 @@ In the steps above, replace `.venv/bin/` with `.venv\Scripts\` on Windows.
 
 `setup.ps1` has not been run on Windows yet.
 
+## Background jobs
+
+Jobs are queued in the same Postgres database (procrastinate). The web app opens the queue in its
+lifespan, so a route can defer a job; a separate worker process runs it and also runs periodic
+tasks:
+
+```sh
+.venv/bin/python -m procrastinate --app=app.jobs.app worker
+```
+
+Define a task in `app/jobs/__init__.py` and defer it from a route or anywhere else:
+
+```python
+@app.task(queue="default", name="log_message")
+async def log_message(message: str) -> None: ...
+
+await log_message.defer_async(message="hello")
+```
+
+The queue tables come from migration `0002_procrastinate`. A procrastinate upgrade needs a new
+revision built from `procrastinate/sql/migrations`; autogenerate skips `procrastinate_*` tables.
+
 ## Project structure
 
 ```
@@ -175,6 +199,7 @@ app/
 ├── templates.py           the Jinja2 environment
 ├── commands/              create_superuser
 ├── core/                  settings (auth, CSRF, MinIO), security headers
+├── jobs/                  procrastinate app and tasks
 ├── database/              engine, session, auth (fastapi-users), init_models
 ├── migrations/            Alembic
 ├── models/                SQLAlchemy models: users, groups, upload
@@ -279,7 +304,7 @@ A model change ships with its migration and its import in `init_models`.
 
 ## Known gaps
 
-The starter runs on SQLite only so far. Upload, download and delete were run against a real MinIO
+Upload, download and delete were run against a real MinIO
 server on 2026-10-14 (RELEASE.2026-09-22); the tests use a fake storage object. Password reset has
 no page yet. The full list is in [`TODO.md`](TODO.md).
 

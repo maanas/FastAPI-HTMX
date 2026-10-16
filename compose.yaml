@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fastapi_htmx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fastapi_htmx}
+      POSTGRES_DB: fastapi_htmx
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastapi_htmx -d fastapi_htmx"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:
