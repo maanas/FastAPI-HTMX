@@ -51,10 +51,6 @@ def render_item(type_, obj, autogen_context):
     return False
 
 
-def is_sqlite(url: str) -> bool:
-    return url.startswith("sqlite")
-
-
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -74,7 +70,6 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
-        render_as_batch=is_sqlite(url),
         render_item=render_item,
     )
 
@@ -87,7 +82,6 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
-        render_as_batch=is_sqlite(config.get_main_option("sqlalchemy.url")),
         render_item=render_item,
     )
 

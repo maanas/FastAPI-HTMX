@@ -5,7 +5,7 @@ small, stable starter for our FastAPI sites. Open work and its order are in `TOD
 
 ## Tech Stack
 
-- Python 3.12, FastAPI, SQLAlchemy 2 (async, SQLite locally), Alembic, fastapi-users, Pydantic v2
+- Python 3.12, FastAPI, SQLAlchemy 2 (async, Postgres via asyncpg, `compose.yaml` for local), Alembic, fastapi-users, Pydantic v2
 - Jinja2 templates with HTMX, Alpine.js, Tailwind CSS v4 and Flowbite v4
 - `uv` manages dependencies: `pyproject.toml` pins them, `uv.lock` locks them, `uv sync` creates `.venv`
   (runtime plus the dev group with pytest and ruff)
@@ -31,10 +31,11 @@ theme/flowbite/            submodule, Flowbite v4.0.2, reference only, nothing l
 ```bash
 uv sync                                   # .venv from uv.lock
 cp .env.example .env                      # then edit it (see README)
+docker compose up -d --wait db            # local Postgres, port 5434; the tests need it too
 .venv/bin/alembic upgrade head            # create or update the database
 .venv/bin/python main.py                  # http://127.0.0.1:8080
 .venv/bin/python -m app.commands.create_superuser   # create or promote a superuser
-.venv/bin/python -m pytest -q app/tests   # builds its own throwaway database; needs the other settings
+.venv/bin/python -m pytest -q app/tests   # builds its own throwaway database on the db container; needs the other settings
 uvx ruff check <files>
 tools/css.sh [--watch]                    # rebuild app/static/css/app.css (Tailwind, no Node)
 .venv/bin/alembic revision --autogenerate --rev-id 0002_<what> -m "<what>"   # next migration, see app/migrations/README

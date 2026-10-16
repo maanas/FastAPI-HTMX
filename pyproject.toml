@@ -10,7 +10,7 @@ dependencies = [
     # fastapi-users-db-sqlalchemy 7 (via fastapi-users 15.0.5) needs sqlalchemy <2.1; 2.1.4 cannot resolve
     "sqlalchemy==2.0.54",
     "uvicorn==0.54.0",
-    "aiosqlite==0.22.1",
+    "asyncpg==0.32.0",
     "jinja2==3.1.6",
     "httpx==0.28.1",
     "nh3==0.3.7",

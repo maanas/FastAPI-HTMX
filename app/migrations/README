@@ -1,4 +1,4 @@
-Alembic migrations, async engine (works with sqlite+aiosqlite).
+Alembic migrations, async engine (Postgres, asyncpg).
 
 Create the database on a fresh clone:
 

@@ -26,7 +26,7 @@ class Group(BaseSQLModel):
     group_desc: Mapped[str | None] = mapped_column(String(length=1024), nullable=True)
 
     # Permission given to the group: stored as VARCHAR(16) with a CHECK constraint
-    # (ck_group_permission), the same on SQLite and Postgres, no native enum type.
+    # (ck_group_permission) on Postgres, no native enum type.
     permission: Mapped[Permission | None] = mapped_column(
         Enum(
             Permission,

@@ -4,13 +4,13 @@ test_*_view.py files; this file holds what is shared."""
 
 import json
 import re
-import sqlite3
 import uuid
 from html.parser import HTMLParser
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from asyncpg.exceptions import UniqueViolationError
 from fastapi import HTTPException
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 from httpx import ASGITransport, AsyncClient
@@ -218,9 +218,9 @@ DB_VALUE = "distinctive-db-parameter-9082"
 
 def database_error():
     return IntegrityError(
-        "INSERT INTO role (role_name) VALUES (?)",
+        "INSERT INTO role (role_name) VALUES ($1)",
         {"role_name": DB_VALUE},
-        sqlite3.IntegrityError(f"UNIQUE constraint failed: {DB_VALUE}"),
+        UniqueViolationError(f"duplicate key value violates unique: {DB_VALUE}"),
     )
 
 
@@ -261,8 +261,8 @@ async def test_a_database_error_logs_its_type_but_not_statement_or_values(
 ):
     response, log = await post_role_and_capture(client, monkeypatch, database_error())
     assert response.status_code == 500
-    assert "IntegrityError (driver: IntegrityError)" in log
-    for leaked in (DB_VALUE, "INSERT INTO", "UNIQUE constraint", LOCAL_VALUE):
+    assert "IntegrityError (driver: UniqueViolationError)" in log
+    for leaked in (DB_VALUE, "INSERT INTO", "duplicate key", LOCAL_VALUE):
         assert leaked not in log
         if leaked != LOCAL_VALUE:
             assert leaked not in response.text
