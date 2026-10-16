@@ -24,7 +24,7 @@ You implement one step for the FastAPI-HTMX starter: FastAPI + SQLAlchemy (async
 - Load the project skill the step touches before you write: `flowbite` for any markup, `htmx-patterns` for any `hx-*` attribute or HTMX route, `new-page` for a new screen.
 - Load a pattern skill (fastapi-patterns, python-patterns, python-testing, error-handling, database-migrations, accessibility, security-review) only when the step needs it.
 - Do not commit or push.
-- A test or guard that scans templates must be shown to work: give it one case it must flag (every attribute form the rule names) and one it must not (the word inside a string literal), and run it once with the change removed. Put a one-off assertion outside a parametrized test.
+- Every new test for a fix or a guard must be shown failing without the change: stash the changed source file, run the test, restore, and write the failing run in your report. A template scanner also gets one case it must flag (every attribute form the rule names) and one it must not (the word inside a string literal). Put a one-off assertion outside a parametrized test.
 - Changing an existing test: write the old guarantee in your report and keep a test for it; a behaviour you change on the way (a leak you close) gets its own test.
 - Run `uvx ruff check` on the changed files again after every fix round, docstring edits included.
 

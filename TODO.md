@@ -364,3 +364,5 @@ Nothing pending outside the open items under State and Done.
   blocks other requests; a test fails if any of the four client methods calls the SDK on the
   loop thread. The unused `create_bucket` and `list_files` are gone. The download response
   (urllib3) is still never closed or released explicitly.
+  One retro proposal applied (coder: every new fix or guard test is shown failing without the
+  change).
