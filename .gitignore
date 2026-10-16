@@ -265,3 +265,10 @@ app/static/minio_server/*
 
 # Excluding DB files to be pushed
 *.db
+.venv/
+.env.*
+!.env.example
+.claude/settings.local.json
+
+# .maanas skill helpers (the Python [Ss]cripts rule above would hide them)
+!.maanas/**/scripts/
