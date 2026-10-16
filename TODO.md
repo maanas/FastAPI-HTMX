@@ -70,7 +70,7 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   command is in the README. The image is still on the Mac Pro, the container is removed.
 - Pull requests #11 to #17 are merged (#11 to #16 on 2026-10-14, #17 on 2026-10-16).
 - Postgres and procrastinate (2026-10-16, branch `feat/postgres-procrastinate`, pull request
-  #18, open for maanas to merge): the starter runs on Postgres only (asyncpg, `compose.yaml` with
+  #18, merged 2026-10-16): the starter runs on Postgres only (asyncpg, `compose.yaml` with
   postgres:17 on 127.0.0.1:5434, tests on a throwaway database on that server) with the
   procrastinate job queue (`app/jobs/`, migration 0002, worker command). Follow-ups on the same
   branch: `psycopg_conninfo()` maps `?ssl=` to `sslmode`, 0002 renders under `--sql`, a test
@@ -86,8 +86,10 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - The ECC skills `python-testing` and `fastapi-patterns` still show SQLite examples.
   - SQLite is gone: the SQLite notes in the items below are history. Existing `users.db` files
     are not migrated.
-- Next: after #18 is merged, pick a task from the open items below (MinIO calls off the event
-  loop, loguru without `diagnose`, the broken add-user role form, a generic error toast) or
+- MinIO off the event loop (2026-10-16, branch `fix/minio-off-loop`, pull request open for
+  maanas to merge): see Done.
+- Next: pick a task from the open items below (loguru without `diagnose`, the broken add-user
+  role form, a generic error toast, the Postgres leftovers above) or
   medusa step 2 in the spider repo, built from the whole starter (see "Decide what medusa takes").
 
 ## Pending
@@ -301,13 +303,11 @@ Nothing pending outside the open items under State and Done.
   Left open by it:
   - A failed download answers at the `/download/...` URL with the upload heading and the message
     only, no form and no table: the user has to go back.
-  - The MinIO client's calls are synchronous inside `async def`: they block the event loop, for
-    about 6 seconds per request when the server is down (`asyncio.to_thread`).
   - No test pins that a file refused by validation never reaches the bucket check (one
     `bucket_checks == 0` assert in an existing test).
   - With several worker processes, two first uploads at once can both try to create the bucket;
     the loser answers 503 once.
-  - `MinioClient.create_bucket` is unused now. The date column shows `14-10-2026` with no time.
+  - The date column shows `14-10-2026` with no time.
 - [x] **Housekeeping** (2026-10-14, branch `chore/housekeeping`): templates, static files, the
   Alembic location and the settings' `.env` resolve from the package, so the app runs from any
   directory (`test_working_directory.py` starts it from another one); `@app.on_event` is a
@@ -359,3 +359,8 @@ Nothing pending outside the open items under State and Done.
     (`~/Sites/minelytics/FastAPI-HTMX/theme/flowbite`), no submodule in spider. It is there on
     the Mac Pro only, not on the Mac mini.
 - [x] **Background jobs**: procrastinate on Postgres, done on `feat/postgres-procrastinate` (2026-10-16).
+- [x] **MinIO off the event loop** (2026-10-16, branch `fix/minio-off-loop`): every SDK call in
+  `app/core/minio_core.py` runs through `asyncio.to_thread`, so a slow or down server no longer
+  blocks other requests; a test fails if any of the four client methods calls the SDK on the
+  loop thread. The unused `create_bucket` and `list_files` are gone. The download response
+  (urllib3) is still never closed or released explicitly.
