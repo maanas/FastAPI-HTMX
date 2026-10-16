@@ -1,6 +1,8 @@
 import html
+import io
 import json
 import re
+import threading
 import uuid
 from types import SimpleNamespace
 
@@ -829,9 +831,11 @@ class StubSdk:
         self.buckets = set(buckets)
         self.fail = fail
         self.calls = []
+        self.threads = []
 
     def bucket_exists(self, name):
         self.calls.append("exists")
+        self.threads.append(threading.get_ident())
         if self.fail:
             raise self.fail
         return name in self.buckets
@@ -839,6 +843,15 @@ class StubSdk:
     def make_bucket(self, name):
         self.calls.append("make")
         self.buckets.add(name)
+
+    def put_object(self, bucket, name, data, length):
+        self.threads.append(threading.get_ident())
+
+    def get_object(self, bucket, name):
+        self.threads.append(threading.get_ident())
+
+    def remove_object(self, bucket, name):
+        self.threads.append(threading.get_ident())
 
 
 async def test_ensure_bucket_creates_a_missing_bucket_and_checks_once():
@@ -865,6 +878,25 @@ async def test_ensure_bucket_does_not_remember_a_failure():
     await real.ensure_bucket()
     assert real.minio_client.calls == ["exists", "exists"]
     assert real.bucket_ready is True
+
+
+@pytest.mark.parametrize("method", ["ensure_bucket", "upload_file", "get_file", "remove_file"])
+async def test_sdk_calls_run_off_the_event_loop_thread(method):
+    from fastapi import UploadFile
+
+    from app.core.minio_core import MinioClient
+
+    real = MinioClient()
+    real.minio_client = StubSdk()
+    args = {
+        "ensure_bucket": (),
+        "upload_file": (UploadFile(io.BytesIO(b"x"), filename="a.txt"), "a.txt"),
+        "get_file": ("a.txt",),
+        "remove_file": ("a.txt",),
+    }[method]
+    await getattr(real, method)(*args)
+    assert real.minio_client.threads
+    assert threading.get_ident() not in real.minio_client.threads
 
 
 async def test_the_upload_route_asks_the_client_to_ensure_the_bucket_on_every_upload(
