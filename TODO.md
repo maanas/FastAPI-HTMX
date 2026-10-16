@@ -16,6 +16,10 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 
 ## State
 
+- Dev team move (branch `chore/maanas-context-guard`, pull request #17): team agents and skills
+  moved to `.maanas/` and linked; context guard live (85k warn, 100k compact); this file split
+  into State, Pending, Done; `~/bin/ecc.sh` rules relaxed (uv run and ty yield to the project
+  section). Merge it before #18, which then moves its agent edits to `.maanas/agents/`.
 - Pull requests #1 to #10 are merged (#10 on 2026-10-14). `main` holds the uv setup with pinned
   dependencies, the vendored assets, the CSS build, the whole template task (every template is
   Flowbite 4.0.2 markup, 3,592 lines down to 1,387), hyperscript removed, the Alpine CSP build,
@@ -69,7 +73,13 @@ in variables in one place (colours are decided later, keep Flowbite's default th
 - Next: medusa step 2 in the spider repo, built from the whole starter (see "Decide what medusa
   takes").
 
-## Change list
+## Pending
+
+- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
+  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
+  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.
+
+## Done
 
 - [x] **Run it as it is** (2026-10-13). Found in the run:
   - `requirements.txt` has no `loguru` (a dev dependency in `pyproject.toml`, imported by
@@ -333,6 +343,3 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   - medusa's `flowbite` skill reads the reference markup from this clone
     (`~/Sites/minelytics/FastAPI-HTMX/theme/flowbite`), no submodule in spider. It is there on
     the Mac Pro only, not on the Mac mini.
-- [ ] **Background jobs** (owner's idea, 2026-10-13): a Postgres job queue in this stack. Decide
-  after the starter runs on Postgres (SQLite only today); candidates to compare then are a
-  `SELECT ... FOR UPDATE SKIP LOCKED` table and a library such as procrastinate or pgqueuer.

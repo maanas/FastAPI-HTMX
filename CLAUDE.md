@@ -23,6 +23,7 @@ app/static/                vendored JS, built CSS, images
 app/migrations/            Alembic
 app/tests/                 pytest
 skills/                    this repo's own skills, linked into .claude/skills/
+.maanas/                   dev team agents and workflow skills, linked into .claude/ (see its README)
 theme/flowbite/            submodule, Flowbite v4.0.2, reference only, nothing loads from it
 ```
 
@@ -57,7 +58,7 @@ tools/css.sh [--watch]                    # rebuild app/static/css/app.css (Tail
 ## Orchestration
 
 The main session directs: it plans, delegates, reads reports and decides. Workers in
-`.claude/agents/` do the work and never delegate further.
+`.maanas/agents/` (linked into `.claude/agents/`) do the work and never delegate further.
 
 | Agent | Model | Job |
 |---|---|---|
@@ -91,8 +92,9 @@ and `--no-verify`. `.claude/hooks/protected-files.sh` blocks edits to `.env` fil
 | `commit`, `pull-request`, `learning-report` | Team workflow |
 
 Skills written for this repo (`flowbite`, `htmx-patterns`, `new-page`) live in `skills/` at the repo
-root and are linked into `.claude/skills/` (`ln -s ../../skills/<name> .claude/skills/<name>`); edit
-them in `skills/`. The ECC and team skills live directly in `.claude/skills/`.
+root; the team skills (`commit`, `pull-request`, `learning-report`) and the agents live in
+`.maanas/`. `.maanas/link.sh` links all of them into `.claude/`; edit them at the source. The ECC
+skills live directly in `.claude/skills/`.
 
 A skill in `skills/` follows progressive disclosure: `SKILL.md` opens with an "Essentials" block of
 at most 100 words that is enough for the common case, then a "Contents" table that says which
@@ -103,12 +105,96 @@ at most 100 words that is enough for the common case, then a "Contents" table th
 
 One task per session. When a task's pull request is open (or merged), write what is still open to
 `TODO.md` and ask the user to `/clear` before the next task: every call resends the whole
-conversation, so a long session is the main token cost. Past about 200k tokens of context, say so
-and propose the clear at the next clean stop. After each commit, tell the user the hash and
+conversation, so a long session is the main token cost. Auto-compaction runs at 100k tokens
+(`autoCompactWindow` in `.claude/settings.json`); after it the SessionStart `compact` hook
+(`.claude/hooks/resume-context.sh`) re-injects the branch, git state and `TODO.md` above
+`## Done`, so `TODO.md` is the only state that survives. The context guard
+(`.claude/hooks/context-guard.sh`, `CONTEXT_LIMIT`, default 85k) warns from 85k: write the state
+to `TODO.md` first (step ledger included), then continue, and propose the clear at the next
+clean stop. Both hooks are written by `ecc.sh`; fix them there, not here. After each commit, tell the user the hash and
 whether this is a clean stop to clear at. Give subagents one step each, not a whole task. Tell a worker
 which files to read; do not paste them into the prompt.
 
-ECC skills are copied in by `~/bin/ecc.sh .` (plugin disabled for this project), listed in
+ECC skills are copied in by `~/bin/ecc.sh . web` (plugin disabled for this project), listed in
 `.claude/.ecc-manifest`. The team files (`coder`, `reviewer`, `checker`, `committer`, `retro`,
 `commit`, `learning-report`, `pull-request`, the hooks) were adapted from
 `~/Sites/minelytics/spider`.
+
+<!-- ecc.sh:rules:start - managed by ~/bin/ecc.sh; edits inside this block are overwritten -->
+## Hard Limits
+- Functions: <= 100 lines
+- Cyclomatic complexity: <= 8
+- Positional parameters: <= 5
+- Line length: 100 characters
+- Files: <= 500 lines
+
+## Python Tooling
+- Package manager: uv
+- Linting + formatting: ruff
+- Type checking: ty, where the project has it set up
+- Testing: pytest
+- Run commands: `uv run <tool>`, unless the project section of CLAUDE.md names another form
+  (e.g. `.venv/bin/<tool>`); the project section wins
+- Skill helper scripts: PEP 723 single files, `uv run <path>` (see `.maanas/README.md`)
+
+## Behavioral Rules
+- NEVER create files unless absolutely necessary
+- ALWAYS read a file before editing it
+- ALWAYS prefer editing existing files to creating new ones
+- NEVER commit secrets, credentials, or .env files
+- No AI attribution in commits or PRs (no Co-Authored-By, no "Generated with")
+
+## Error Handling
+- Fail fast with clear, actionable messages
+- Never swallow exceptions silently
+- Include context (what operation, what input, suggested fix)
+
+## Session state
+- `TODO.md` is the only state that survives auto-compaction (at 100k tokens; the SessionStart
+  compact hook re-injects it). Treat it as the state capture, not just a build order.
+- Layout: `## State` (one `Next:` line with files and next step, what is in progress, decisions
+  and notes), then `## Pending` (open items by phase), then `## Done` (finished items by phase).
+  Only State and Pending are re-injected; Done is read on demand.
+- Update it as you work, not at the end: move finished items from Pending to Done, keep `Next:`
+  and the decisions current.
+- When the context-guard hook reports the budget, write the state to `TODO.md` before anything else.
+
+## Approach
+- Think before acting. Read existing files before writing code.
+- Be concise in output but thorough in reasoning.
+- Prefer editing over rewriting whole files.
+- Do not re-read files you have already read unless the file may have changed.
+- Test your code before declaring done.
+- No sycophantic openers or closing fluff.
+- Keep solutions simple and direct.
+- User instructions always override this file.
+
+## Code Rules
+- Simplest working solution. No over-engineering.
+- No abstractions for single-use operations.
+- No speculative features or "you might also want..."
+- No docstrings or type annotations on code not being changed.
+- No error handling for scenarios that cannot happen.
+- Three similar lines is better than a premature abstraction.
+
+## Review Rules
+- State the bug. Show the fix. Stop.
+- No suggestions beyond the scope of the review.
+- No compliments on the code before or after the review.
+
+## Debugging Rules
+- Never speculate about a bug without reading the relevant code first.
+- State what you found, where, and the fix. One pass.
+- If cause is unclear: say so. Do not guess.
+
+## Formatting
+- No em dashes, smart quotes, or decorative Unicode symbols.
+- Plain hyphens and straight quotes only.
+- Natural language characters (accented letters, CJK, etc.) are fine when the content requires them.
+- Code output must be copy-paste safe.
+
+## Output
+- Return code first. Explanation after, only if non-obvious.
+- No inline prose. Use comments sparingly - only where logic is unclear.
+- No boilerplate unless explicitly requested.
+<!-- ecc.sh:rules:end -->
