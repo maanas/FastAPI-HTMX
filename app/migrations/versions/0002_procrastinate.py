@@ -4,13 +4,14 @@ Revision ID: 0002_procrastinate
 Revises: 0001_initial_schema
 Create Date: 2026-10-16 12:00:00
 
-The schema is procrastinate's own SQL for the installed version. A procrastinate upgrade needs a
-new revision that runs the files from procrastinate/sql/migrations for the versions in between.
+The schema is procrastinate's own SQL for PROCRASTINATE_VERSION. A procrastinate upgrade needs a
+new revision that runs the files from procrastinate/sql/migrations for the versions in between;
+test_jobs.py fails when the installed version differs from PROCRASTINATE_VERSION.
 """
 
 from collections.abc import Sequence
 
-from alembic import op
+from alembic import context, op
 from procrastinate.schema import SchemaManager
 from sqlalchemy.util import await_only
 
@@ -19,8 +20,15 @@ down_revision: str | None = "0001_initial_schema"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
+# The procrastinate version whose schema upgrade() installs (pinned in pyproject.toml).
+PROCRASTINATE_VERSION = "3.10.0"
+
 
 def run_script(sql: str) -> None:
+    if context.is_offline_mode():
+        # Written to the --sql output as it is: op.execute(text()) would read `:word` as a bind.
+        context.static_output(sql.strip().rstrip(";") + ";")
+        return
     # asyncpg prepares statements, which allow one command; its execute() without arguments
     # uses the simple query protocol and runs a whole multi-statement script.
     driver = op.get_bind().connection.driver_connection

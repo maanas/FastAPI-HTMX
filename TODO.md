@@ -79,10 +79,9 @@ in variables in one place (colours are decided later, keep Flowbite's default th
   workers use `.venv/bin/python -m <tool>`. Agents and skills still mention SQLite: retro
   proposal. Step 2 `49377bf` (coder 50k, reviewer 37k approve, 0 fix rounds, checker
   28k pass 612 tests plus a worker smoke job, committer 20k). Step 3 (docs) was folded into steps
-  1 and 2. Retro done: 4 proposals applied (checker Postgres scratch db and real login recipe, coder and reviewer Postgres db rules); ruff line-length set to 100 to match CLAUDE.md. Next: the pull request, then `/clear`. Recreate the local `.venv` (`rm -rf .venv && uv sync`). Open after this task: the jobs
-  conninfo uses `str.replace("+asyncpg", "")` (fine until an asyncpg-only query parameter
-  such as `?ssl=` appears; then use `make_url().set(drivername="postgresql")`); the offline
-  `alembic upgrade --sql` cannot run 0002.
+  1 and 2. Retro done: 4 proposals applied (checker Postgres scratch db and real login recipe, coder and reviewer Postgres db rules); ruff line-length set to 100 to match CLAUDE.md. Next: the pull request, then `/clear`. Recreate the local `.venv` (`rm -rf .venv && uv sync`). Closed after this task: `psycopg_conninfo()` maps `?ssl=` to `sslmode`; 0002 renders under `--sql`; a test fails when the installed procrastinate differs from the version 0002 was written for. Still open: other asyncpg-only query parameters (such as
+  `prepared_statement_cache_size`) reach libpq unmapped; `app/migrations/env.py` passes
+  `DATABASE_URL` through ConfigParser, so a `%` in the password breaks alembic (escape it as `%%`).
 
 ## Change list
 
